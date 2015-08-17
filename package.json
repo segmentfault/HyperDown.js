@@ -1,0 +1,16 @@
+{
+  "name": "hyperdown",
+  "description": "Markdown解析器",
+  "repository": "https://github.com/SegmentFault/HyperDown.js",
+  "license": "BSD-4-Clause",
+  "version": "0.0.1",
+  "devDependencies": {
+    "babel": "^5.8.22",
+    "lodash": "^3.10.1"
+  },
+  "scripts": {
+    "build": "node_modules/.bin/babel src --out-dir dist --source-maps",
+    "watch": "node_modules/.bin/babel src --out-dir dist --source-maps --watch"
+  },
+  "main": "dist/sdk.js"
+}
