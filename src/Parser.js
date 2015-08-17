@@ -223,7 +223,7 @@ function md5(str) {
   return temp.toLowerCase()
 }
 
-export default class Parser {
+class Parser {
     constractor () {
         this.commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a|hr|small'
         this.specialWhiteList = {
@@ -244,6 +244,7 @@ export default class Parser {
      * @return string
      */
     makeHtml (text) {
+        console.log(this)
         let html = this.parse(text)
         return this.makeFootnotes(html)
     }
@@ -289,6 +290,7 @@ export default class Parser {
      * @return string
      */
     parse (text) {
+        console.log(this.__proto__)
         let blocks = this.parseBlock(text, text.split("\n"))
         let html = ''
 
@@ -455,9 +457,9 @@ export default class Parser {
     parseBlock (text) {
         let lines = text.split("\n")
         this.blocks = []
-        this.current = ''
+        this.current = 'normal'
         this.pos = -1
-        console.log(this.specialWhiteList)
+        console.log(this)
         let special = Object.keys(this.specialWhiteList).join("|")
         let emptyCount = 0
 
@@ -1119,4 +1121,5 @@ export default class Parser {
 }
 
 var parser = new Parser()
+console.log(parser)
 console.log(parser.makeHtml('##sdfsfd##'))
