@@ -224,7 +224,7 @@ function md5(str) {
 }
 
 class Parser {
-    constractor () {
+    constructor () {
         this.commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a|hr|small'
         this.specialWhiteList = {
             table:  'table|tbody|thead|tfoot|tr|td|th'
