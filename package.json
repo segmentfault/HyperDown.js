@@ -9,8 +9,12 @@
     "lodash": "^3.10.1"
   },
   "scripts": {
-    "build": "node_modules/.bin/babel src --out-dir dist --source-maps",
-    "watch": "node_modules/.bin/babel src --out-dir dist --source-maps --watch"
+    "test": "mocha",
+    "build": "node_modules/.bin/babel src --out-dir dist",
+    "watch": "node_modules/.bin/babel src --out-dir dist --watch"
   },
-  "main": "dist/sdk.js"
+  "main": "dist/sdk.js",
+  "bugs": {
+    "url": "https://github.com/SegmentFault/HyperDown.js/issues"
+  }
 }

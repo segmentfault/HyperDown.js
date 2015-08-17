@@ -9,16 +9,6 @@
 import _ from 'lodash'
 
 /**
- * Generator 遍历json
- */
-
-function* entries(obj) {
-    for (let key of Object.keys(obj)) {
-        yield [key, obj[key]];
-    }
-}
-
-/**
  * md5
  * discuss at: http://phpjs.org/functions/md5/
  * original by: Webtoolkit.info (http://www.webtoolkit.info/)
@@ -233,7 +223,6 @@ function md5(str) {
   return temp.toLowerCase()
 }
 
-
 export default class Parser {
     constractor () {
         this.commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a|hr|small'
@@ -255,7 +244,7 @@ export default class Parser {
      * @return string
      */
     makeHtml (text) {
-        let html = this.parser(text)
+        let html = this.parse(text)
         return this.makeFootnotes(html)
     }
 
@@ -271,7 +260,7 @@ export default class Parser {
      * @param html
      * @return string
      */
-    static makeFootnotes (html) {
+    makeFootnotes (html) {
         if (this.footnotes.length > 0) {
             html += '<div class="footnotes"><hr><ol>'
             let index = 1
@@ -299,8 +288,8 @@ export default class Parser {
      * @param string text
      * @return string
      */
-    static parse (text) {
-        let blocks = this.parseBlock(text, lines)
+    parse (text) {
+        let blocks = this.parseBlock(text, text.split("\n"))
         let html = ''
 
         blocks.forEach (block => {
@@ -323,7 +312,7 @@ export default class Parser {
      * @param value
      * @return mixed
      */
-    static call (type, ...value) {
+    call (type, ...value) {
         if (!this.hooks[type]) {
             return value[0]
         }
@@ -345,7 +334,7 @@ export default class Parser {
      * @param string whiteList
      * @return string
      */
-    static parseInline (text, whiteList = '') {
+    parseInline (text, whiteList = '') {
         let id = 0
         let uniqid = md5((new Date()).getTime())
         let codes = []
@@ -447,9 +436,9 @@ export default class Parser {
             "$1<a href=\"$2\">$2</a>$4")
 
         // release
-        for (let [key, value] of entries(codes)) {
+        _.forOwn(codes, (value, key) => {
             text = text.replace(key, value)
-        }
+        })
 
         text = this.call('afterParseInline', text)
 
@@ -463,16 +452,22 @@ export default class Parser {
      * @param array lines
      * @return array
      */
-    static parseBlock (text, lines) {
-        lines = explode("\n", text)
+    parseBlock (text) {
+        let lines = text.split("\n")
         this.blocks = []
         this.current = ''
         this.pos = -1
+        console.log(this.specialWhiteList)
         let special = Object.keys(this.specialWhiteList).join("|")
         let emptyCount = 0
 
+        // function* entries(obj) {
+        //     for (let key of Object.keys(obj)) {
+        //         yield [key, obj[key]];
+        //     }
+        // }
         // analyze by line
-        for (let [key, line] of entries(lines)) {
+        for (let [key, line] of lines) {
             // code block is special
             if (matches = line.match("/^(~|`){3,}([^`~]*)$/i")) {
                 if (this.isBlock('code')) {
@@ -481,7 +476,6 @@ export default class Parser {
                 } else {
                     this.startBlock('code', key, matches[2])
                 }
-
                 continue
             } else if (this.isBlock('code')) {
                 this.setBlock(key)
@@ -682,11 +676,11 @@ export default class Parser {
      * @param array lines
      * @return array
      */
-    static optimizeBlocks(blocks, lines)
+    optimizeBlocks(blocks, lines)
     {
         blocks = this.call('beforeOptimizeBlocks', blocks, lines)
 
-        for (let [key, block] of entries(blocks)) {
+        _forOwn(blocks, (block, key) => {
             let prevBlock = blocks[key - 1] ? blocks[key - 1] : null
             let nextBlock = $blocks[key + 1] ? blocks[key + 1] : null
 
@@ -719,7 +713,7 @@ export default class Parser {
                     }
                 }
             }
-        }
+        })
 
         return this.call('afterOptimizeBlocks', blocks, lines)
     }
@@ -731,8 +725,7 @@ export default class Parser {
      * @param string lang
      * @return string
      */
-    static parseCode(lines, lang)
-    {
+    parseCode(lines, lang) {
         lang = lang.trim()
         lines = lines.slice(1, -1)
 
@@ -746,8 +739,7 @@ export default class Parser {
      * @param array lines
      * @return string
      */
-    static parsePre(lines)
-    {
+    parsePre(lines) {
         for (let line of lines) {
             line = htmlspecialchars(line.substr(4))
         }
@@ -762,8 +754,7 @@ export default class Parser {
      * @param int num
      * @return string
      */
-    static parseSh(lines, num)
-    {
+    parseSh(lines, num) {
         let line = this.parseInline(lines[0].trim().replace(/^#+|#+$/g, ''))
         return `<h${num}>${line}</h${num}>`
     }
@@ -775,8 +766,7 @@ export default class Parser {
      * @param int num
      * @return string
      */
-    static parseMh(lines, num)
-    {
+    parseMh(lines, num) {
         let line = this.parseInline(lines[0].trim().replace(/^#+|#+$/g, ''))
         return `<h${num}>${line}</h${num}>`
     }
@@ -787,8 +777,7 @@ export default class Parser {
      * @param array lines
      * @return string
      */
-    static parseQuote(lines)
-    {
+    parseQuote(lines) {
         for (let line of lines) {
             line = line.replace(/^> ?/, '')
         }
@@ -802,14 +791,13 @@ export default class Parser {
      * @param array lines
      * @return string
      */
-    static parseList(lines)
-    {
+    parseList(lines) {
         html = ''
         minSpace = 99999
         rows = []
 
         // count levels
-        for (let [key, line] of entries(lines)) {
+        _.forOwn (lines, (line, key) => {
             let matches = line.match(/^(\s*)((?:[0-9a-z]\.?)|\-|\+|\*)(\s+)(.*)$/)
             if (matches) {
                 let space = matches[1].length
@@ -820,7 +808,7 @@ export default class Parser {
             } else {
                 rows.push(line)
             }
-        }
+        })
 
         let found = false
         let secondMinSpace = 99999
@@ -876,15 +864,19 @@ export default class Parser {
      * @param array value
      * @return string
      */
-    static parseTable(lines, value)
-    {
+    parseTable(lines, value) {
         let [head, aligns] = value
         let ignore = head ? 1 : 0
 
         let html = '<table>'
         let body = null
 
-        for (let [key, line] of entries(lines)) {
+        // function* entries(obj) {
+        //   for (let key of Object.keys(obj)) {
+        //     yield [key, obj[key]];
+        //   }
+        // }
+        for (let [key, line] of lines) {
             if (key === ignore) {
                 head = false
                 body = true
@@ -920,7 +912,7 @@ export default class Parser {
 
             html += '<tr>'
 
-            for (let [key, column] of entries(columns)) {
+            _.forOwn (columns, (column, key) => {
                 let [num, text] = column
                 let tag = head ? 'th' : 'td'
 
@@ -934,7 +926,7 @@ export default class Parser {
                 }
 
                 html += '>' + this.parseInline(text) + `</${tag}>`
-            }
+            })
 
             html += '</tr>'
 
@@ -958,8 +950,7 @@ export default class Parser {
      *
      * @return string
      */
-    static parseHr()
-    {
+    parseHr() {
         return '<hr>'
     }
 
@@ -969,8 +960,7 @@ export default class Parser {
      * @param array lines
      * @return string
      */
-    static parseNormal(lines)
-    {
+    parseNormal(lines) {
         for (let line of lines) {
             line = this.parseInline(line)
         }
@@ -989,8 +979,7 @@ export default class Parser {
      * @param array value
      * @return string
      */
-    static parseFootnote(lines, value)
-    {
+    parseFootnote(lines, value) {
         let [space, note] = value
         let index = this.footnotes.indexOf(note)
 
@@ -1007,8 +996,7 @@ export default class Parser {
      *
      * @return string
      */
-    static parseDefinition()
-    {
+    parseDefinition() {
         return ''
     }
 
@@ -1019,8 +1007,7 @@ export default class Parser {
      * @param string type
      * @return string
      */
-    static parseHtml(lines, type)
-    {
+    parseHtml(lines, type) {
         for (let line of lines) {
             line = this.parseInline(line,
                 this.specialWhiteList[type] ? this.specialWhiteList[type] : '')
@@ -1033,8 +1020,7 @@ export default class Parser {
      * @param str
      * @return mixed
      */
-    static escapeBracket(str)
-    {
+    escapeBracket(str) {
         return str.replace(['[', ']'], ['[', ']'])
     }
 
@@ -1046,8 +1032,7 @@ export default class Parser {
      * @param mixed value
      * @return this
      */
-    static startBlock(type, start, value = null)
-    {
+    startBlock(type, start, value = null) {
         this.pos ++
         this.current = type
 
@@ -1061,7 +1046,7 @@ export default class Parser {
      *
      * @return this
      */
-    static endBlock() {
+    endBlock() {
         this.current = 'normal'
         return this
     }
@@ -1073,8 +1058,7 @@ export default class Parser {
      * @param mixed value
      * @return bool
      */
-    static isBlock(type, value = null)
-    {
+    isBlock(type, value = null) {
         return this.current += type
             && (null === value ? true : this.blocks[this.pos][3] += value)
     }
@@ -1084,8 +1068,7 @@ export default class Parser {
      *
      * @return array
      */
-    static getBlock()
-    {
+    getBlock() {
         return this.blocks[this.pos] ? this.blocks[this.pos] : null
     }
 
@@ -1096,7 +1079,7 @@ export default class Parser {
      * @param mixed value
      * @return this
      */
-    static setBlock(to = null, value = null) {
+    setBlock(to = null, value = null) {
         if (null !== to) {
             this.blocks[this.pos][2] = to
         }
@@ -1116,7 +1099,7 @@ export default class Parser {
      * @param mixed value
      * @return this
      */
-    static backBlock(step, type, value = null) {
+    backBlock(step, type, value = null) {
         if (this.pos < 0) {
             return this.startBlock(type, 0, value)
         }
@@ -1134,3 +1117,6 @@ export default class Parser {
         return this
     }
 }
+
+var parser = new Parser()
+console.log(parser.makeHtml('##sdfsfd##'))

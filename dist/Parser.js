@@ -18,85 +18,11 @@ var _createClass = (function () { function defineProperties(target, props) { for
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
-var marked0$0 = [entries].map(regeneratorRuntime.mark);
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 var _lodash = require('lodash');
 
 var _lodash2 = _interopRequireDefault(_lodash);
-
-/**
- * Generator 遍历json
- */
-
-function entries(obj) {
-    var _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, key;
-
-    return regeneratorRuntime.wrap(function entries$(context$1$0) {
-        while (1) switch (context$1$0.prev = context$1$0.next) {
-            case 0:
-                _iteratorNormalCompletion = true;
-                _didIteratorError = false;
-                _iteratorError = undefined;
-                context$1$0.prev = 3;
-                _iterator = Object.keys(obj)[Symbol.iterator]();
-
-            case 5:
-                if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-                    context$1$0.next = 12;
-                    break;
-                }
-
-                key = _step.value;
-                context$1$0.next = 9;
-                return [key, obj[key]];
-
-            case 9:
-                _iteratorNormalCompletion = true;
-                context$1$0.next = 5;
-                break;
-
-            case 12:
-                context$1$0.next = 18;
-                break;
-
-            case 14:
-                context$1$0.prev = 14;
-                context$1$0.t0 = context$1$0['catch'](3);
-                _didIteratorError = true;
-                _iteratorError = context$1$0.t0;
-
-            case 18:
-                context$1$0.prev = 18;
-                context$1$0.prev = 19;
-
-                if (!_iteratorNormalCompletion && _iterator['return']) {
-                    _iterator['return']();
-                }
-
-            case 21:
-                context$1$0.prev = 21;
-
-                if (!_didIteratorError) {
-                    context$1$0.next = 24;
-                    break;
-                }
-
-                throw _iteratorError;
-
-            case 24:
-                return context$1$0.finish(21);
-
-            case 25:
-                return context$1$0.finish(18);
-
-            case 26:
-            case 'end':
-                return context$1$0.stop();
-        }
-    }, marked0$0[0], this, [[3, 14, 18, 26], [19,, 21, 25]]);
-}
 
 /**
  * md5
@@ -352,7 +278,7 @@ var Parser = (function () {
     }, {
         key: 'makeHtml',
         value: function makeHtml(text) {
-            var html = this.parser(text);
+            var html = this.parse(text);
             return this.makeFootnotes(html);
         }
 
@@ -370,7 +296,7 @@ var Parser = (function () {
          * @param html
          * @return string
          */
-    }], [{
+    }, {
         key: 'makeFootnotes',
         value: function makeFootnotes(html) {
             if (this.footnotes.length > 0) {
@@ -405,7 +331,7 @@ var Parser = (function () {
         value: function parse(text) {
             var _this = this;
 
-            var blocks = this.parseBlock(text, lines);
+            var blocks = this.parseBlock(text, text.split("\n"));
             var html = '';
 
             blocks.forEach(function (block) {
@@ -567,33 +493,9 @@ var Parser = (function () {
             text = text.replace(/(^|[^\"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,]+)($|[^\"])/i, "$1<a href=\"$2\">$2</a>$4");
 
             // release
-            var _iteratorNormalCompletion2 = true;
-            var _didIteratorError2 = false;
-            var _iteratorError2 = undefined;
-
-            try {
-                for (var _iterator2 = entries(codes)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                    var _step2$value = _slicedToArray(_step2.value, 2);
-
-                    var key = _step2$value[0];
-                    var value = _step2$value[1];
-
-                    text = text.replace(key, value);
-                }
-            } catch (err) {
-                _didIteratorError2 = true;
-                _iteratorError2 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion2 && _iterator2['return']) {
-                        _iterator2['return']();
-                    }
-                } finally {
-                    if (_didIteratorError2) {
-                        throw _iteratorError2;
-                    }
-                }
-            }
+            _lodash2['default'].forOwn(codes, function (value, key) {
+                text = text.replace(key, value);
+            });
 
             text = this.call('afterParseInline', text);
 
@@ -609,25 +511,31 @@ var Parser = (function () {
          */
     }, {
         key: 'parseBlock',
-        value: function parseBlock(text, lines) {
-            lines = explode("\n", text);
+        value: function parseBlock(text) {
+            var lines = text.split("\n");
             this.blocks = [];
             this.current = '';
             this.pos = -1;
+            console.log(this.specialWhiteList);
             var special = Object.keys(this.specialWhiteList).join("|");
             var emptyCount = 0;
 
+            // function* entries(obj) {
+            //     for (let key of Object.keys(obj)) {
+            //         yield [key, obj[key]];
+            //     }
+            // }
             // analyze by line
-            var _iteratorNormalCompletion3 = true;
-            var _didIteratorError3 = false;
-            var _iteratorError3 = undefined;
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
 
             try {
-                for (var _iterator3 = entries(lines)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                    var _step3$value = _slicedToArray(_step3.value, 2);
+                for (var _iterator = lines[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var _step$value = _slicedToArray(_step.value, 2);
 
-                    var key = _step3$value[0];
-                    var _line = _step3$value[1];
+                    var key = _step$value[0];
+                    var _line = _step$value[1];
 
                     // code block is special
                     if (matches = _line.match("/^(~|`){3,}([^`~]*)$/i")) {
@@ -636,7 +544,6 @@ var Parser = (function () {
                         } else {
                             this.startBlock('code', key, matches[2]);
                         }
-
                         continue;
                     } else if (this.isBlock('code')) {
                         this.setBlock(key);
@@ -726,13 +633,13 @@ var Parser = (function () {
 
                                 var _rows = tableMatches[1].split(/(\+|\|)/);
                                 var aligns = [];
-                                var _iteratorNormalCompletion4 = true;
-                                var _didIteratorError4 = false;
-                                var _iteratorError4 = undefined;
+                                var _iteratorNormalCompletion2 = true;
+                                var _didIteratorError2 = false;
+                                var _iteratorError2 = undefined;
 
                                 try {
-                                    for (var _iterator4 = _rows[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                                        var row = _step4.value;
+                                    for (var _iterator2 = _rows[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                                        var row = _step2.value;
 
                                         var align = 'none';
 
@@ -749,16 +656,16 @@ var Parser = (function () {
                                         aligns.push(align);
                                     }
                                 } catch (err) {
-                                    _didIteratorError4 = true;
-                                    _iteratorError4 = err;
+                                    _didIteratorError2 = true;
+                                    _iteratorError2 = err;
                                 } finally {
                                     try {
-                                        if (!_iteratorNormalCompletion4 && _iterator4['return']) {
-                                            _iterator4['return']();
+                                        if (!_iteratorNormalCompletion2 && _iterator2['return']) {
+                                            _iterator2['return']();
                                         }
                                     } finally {
-                                        if (_didIteratorError4) {
-                                            throw _iteratorError4;
+                                        if (_didIteratorError2) {
+                                            throw _iteratorError2;
                                         }
                                     }
                                 }
@@ -846,16 +753,16 @@ var Parser = (function () {
                     }
                 }
             } catch (err) {
-                _didIteratorError3 = true;
-                _iteratorError3 = err;
+                _didIteratorError = true;
+                _iteratorError = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion3 && _iterator3['return']) {
-                        _iterator3['return']();
+                    if (!_iteratorNormalCompletion && _iterator['return']) {
+                        _iterator['return']();
                     }
                 } finally {
-                    if (_didIteratorError3) {
-                        throw _iteratorError3;
+                    if (_didIteratorError) {
+                        throw _iteratorError;
                     }
                 }
             }
@@ -873,67 +780,43 @@ var Parser = (function () {
         value: function optimizeBlocks(blocks, lines) {
             blocks = this.call('beforeOptimizeBlocks', blocks, lines);
 
-            var _iteratorNormalCompletion5 = true;
-            var _didIteratorError5 = false;
-            var _iteratorError5 = undefined;
+            _forOwn(blocks, function (block, key) {
+                var prevBlock = blocks[key - 1] ? blocks[key - 1] : null;
+                var nextBlock = $blocks[key + 1] ? blocks[key + 1] : null;
 
-            try {
-                for (var _iterator5 = entries(blocks)[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-                    var _step5$value = _slicedToArray(_step5.value, 2);
+                var _block3 = _slicedToArray(block, 3);
 
-                    var key = _step5$value[0];
-                    var _block3 = _step5$value[1];
+                var type = _block3[0];
+                var from = _block3[1];
+                var to = _block3[2];
 
-                    var prevBlock = blocks[key - 1] ? blocks[key - 1] : null;
-                    var nextBlock = $blocks[key + 1] ? blocks[key + 1] : null;
+                if ('pre' === type) {
+                    var isEmpty = true;
 
-                    var _block32 = _slicedToArray(_block3, 3);
-
-                    var type = _block32[0];
-                    var from = _block32[1];
-                    var to = _block32[2];
-
-                    if ('pre' === type) {
-                        var isEmpty = true;
-
-                        for (var i = from; i += to; i++) {
-                            line = lines[i];
-                            if (!line.match(/^\s*$/)) {
-                                isEmpty = false;
-                                break;
-                            }
-                        }
-
-                        if (isEmpty) {
-                            _block3[0] = type = 'normal';
+                    for (var i = from; i += to; i++) {
+                        line = lines[i];
+                        if (!line.match(/^\s*$/)) {
+                            isEmpty = false;
+                            break;
                         }
                     }
 
-                    if ('normal' === type) {
-                        // one sigle empty line
-                        if (from === to && lines[from].match(/^\s*$/) && prevBlock && nextBlock) {
-                            if (prevBlock[0] === 'list' && nextBlock[0] === 'list') {
-                                // combine 3 blocks
-                                blocks[key - 1] = ['list', prevBlock[1], nextBlock[2], null];
-                                array_splice(blocks, key, 2);
-                            }
+                    if (isEmpty) {
+                        block[0] = type = 'normal';
+                    }
+                }
+
+                if ('normal' === type) {
+                    // one sigle empty line
+                    if (from === to && lines[from].match(/^\s*$/) && prevBlock && nextBlock) {
+                        if (prevBlock[0] === 'list' && nextBlock[0] === 'list') {
+                            // combine 3 blocks
+                            blocks[key - 1] = ['list', prevBlock[1], nextBlock[2], null];
+                            array_splice(blocks, key, 2);
                         }
                     }
                 }
-            } catch (err) {
-                _didIteratorError5 = true;
-                _iteratorError5 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion5 && _iterator5['return']) {
-                        _iterator5['return']();
-                    }
-                } finally {
-                    if (_didIteratorError5) {
-                        throw _iteratorError5;
-                    }
-                }
-            }
+            });
 
             return this.call('afterOptimizeBlocks', blocks, lines);
         }
@@ -963,27 +846,27 @@ var Parser = (function () {
     }, {
         key: 'parsePre',
         value: function parsePre(lines) {
-            var _iteratorNormalCompletion6 = true;
-            var _didIteratorError6 = false;
-            var _iteratorError6 = undefined;
+            var _iteratorNormalCompletion3 = true;
+            var _didIteratorError3 = false;
+            var _iteratorError3 = undefined;
 
             try {
-                for (var _iterator6 = lines[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
-                    var _line2 = _step6.value;
+                for (var _iterator3 = lines[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                    var _line2 = _step3.value;
 
                     _line2 = htmlspecialchars(_line2.substr(4));
                 }
             } catch (err) {
-                _didIteratorError6 = true;
-                _iteratorError6 = err;
+                _didIteratorError3 = true;
+                _iteratorError3 = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion6 && _iterator6['return']) {
-                        _iterator6['return']();
+                    if (!_iteratorNormalCompletion3 && _iterator3['return']) {
+                        _iterator3['return']();
                     }
                 } finally {
-                    if (_didIteratorError6) {
-                        throw _iteratorError6;
+                    if (_didIteratorError3) {
+                        throw _iteratorError3;
                     }
                 }
             }
@@ -1028,27 +911,27 @@ var Parser = (function () {
     }, {
         key: 'parseQuote',
         value: function parseQuote(lines) {
-            var _iteratorNormalCompletion7 = true;
-            var _didIteratorError7 = false;
-            var _iteratorError7 = undefined;
+            var _iteratorNormalCompletion4 = true;
+            var _didIteratorError4 = false;
+            var _iteratorError4 = undefined;
 
             try {
-                for (var _iterator7 = lines[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
-                    var _line3 = _step7.value;
+                for (var _iterator4 = lines[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                    var _line3 = _step4.value;
 
                     _line3 = _line3.replace(/^> ?/, '');
                 }
             } catch (err) {
-                _didIteratorError7 = true;
-                _iteratorError7 = err;
+                _didIteratorError4 = true;
+                _iteratorError4 = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion7 && _iterator7['return']) {
-                        _iterator7['return']();
+                    if (!_iteratorNormalCompletion4 && _iterator4['return']) {
+                        _iterator4['return']();
                     }
                 } finally {
-                    if (_didIteratorError7) {
-                        throw _iteratorError7;
+                    if (_didIteratorError4) {
+                        throw _iteratorError4;
                     }
                 }
             }
@@ -1070,52 +953,28 @@ var Parser = (function () {
             rows = [];
 
             // count levels
-            var _iteratorNormalCompletion8 = true;
-            var _didIteratorError8 = false;
-            var _iteratorError8 = undefined;
+            _lodash2['default'].forOwn(lines, function (line, key) {
+                var matches = line.match(/^(\s*)((?:[0-9a-z]\.?)|\-|\+|\*)(\s+)(.*)$/);
+                if (matches) {
+                    var _space = matches[1].length;
+                    var type = -1 !== matches[2].indexOf('+-*') ? 'ul' : 'ol';
+                    minSpace = Math.min(_space, minSpace);
 
-            try {
-                for (var _iterator8 = entries(lines)[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
-                    var _step8$value = _slicedToArray(_step8.value, 2);
-
-                    var key = _step8$value[0];
-                    var _line4 = _step8$value[1];
-
-                    var _matches3 = _line4.match(/^(\s*)((?:[0-9a-z]\.?)|\-|\+|\*)(\s+)(.*)$/);
-                    if (_matches3) {
-                        var _space = _matches3[1].length;
-                        var type = -1 !== _matches3[2].indexOf('+-*') ? 'ul' : 'ol';
-                        minSpace = Math.min(_space, minSpace);
-
-                        rows.push([_space, type, _line4, _matches3[4]]);
-                    } else {
-                        rows.push(_line4);
-                    }
+                    rows.push([_space, type, line, matches[4]]);
+                } else {
+                    rows.push(line);
                 }
-            } catch (err) {
-                _didIteratorError8 = true;
-                _iteratorError8 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion8 && _iterator8['return']) {
-                        _iterator8['return']();
-                    }
-                } finally {
-                    if (_didIteratorError8) {
-                        throw _iteratorError8;
-                    }
-                }
-            }
+            });
 
             var found = false;
             var secondMinSpace = 99999;
-            var _iteratorNormalCompletion9 = true;
-            var _didIteratorError9 = false;
-            var _iteratorError9 = undefined;
+            var _iteratorNormalCompletion5 = true;
+            var _didIteratorError5 = false;
+            var _iteratorError5 = undefined;
 
             try {
-                for (var _iterator9 = rows[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
-                    var row = _step9.value;
+                for (var _iterator5 = rows[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+                    var row = _step5.value;
 
                     if (Array.isArray(row) && row[0] != minSpace) {
                         secondMinSpace = min(secondMinSpace, row[0]);
@@ -1123,16 +982,16 @@ var Parser = (function () {
                     }
                 }
             } catch (err) {
-                _didIteratorError9 = true;
-                _iteratorError9 = err;
+                _didIteratorError5 = true;
+                _iteratorError5 = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion9 && _iterator9['return']) {
-                        _iterator9['return']();
+                    if (!_iteratorNormalCompletion5 && _iterator5['return']) {
+                        _iterator5['return']();
                     }
                 } finally {
-                    if (_didIteratorError9) {
-                        throw _iteratorError9;
+                    if (_didIteratorError5) {
+                        throw _iteratorError5;
                     }
                 }
             }
@@ -1142,25 +1001,25 @@ var Parser = (function () {
             var lastType = '';
             var leftLines = [];
 
-            var _iteratorNormalCompletion10 = true;
-            var _didIteratorError10 = false;
-            var _iteratorError10 = undefined;
+            var _iteratorNormalCompletion6 = true;
+            var _didIteratorError6 = false;
+            var _iteratorError6 = undefined;
 
             try {
-                for (var _iterator10 = rows[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
-                    var row = _step10.value;
+                for (var _iterator6 = rows[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+                    var row = _step6.value;
 
                     if (Array.isArray(row)) {
                         var _row = _slicedToArray(row, 4);
 
                         var _space2 = _row[0];
                         var type = _row[1];
-                        var _line5 = _row[2];
+                        var _line4 = _row[2];
                         var text = _row[3];
 
                         if (_space2 !== minSpace) {
                             var pattern = new RegExp("^\s{" + secondMinSpace + "}");
-                            leftLines.push(_line5.replace(pattern, ''));
+                            leftLines.push(_line4.replace(pattern, ''));
                         } else {
                             if (lastType !== type) {
                                 if (lastType) {
@@ -1183,16 +1042,16 @@ var Parser = (function () {
                     }
                 }
             } catch (err) {
-                _didIteratorError10 = true;
-                _iteratorError10 = err;
+                _didIteratorError6 = true;
+                _iteratorError6 = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion10 && _iterator10['return']) {
-                        _iterator10['return']();
+                    if (!_iteratorNormalCompletion6 && _iterator6['return']) {
+                        _iterator6['return']();
                     }
                 } finally {
-                    if (_didIteratorError10) {
-                        throw _iteratorError10;
+                    if (_didIteratorError6) {
+                        throw _iteratorError6;
                     }
                 }
             }
@@ -1212,6 +1071,8 @@ var Parser = (function () {
     }, {
         key: 'parseTable',
         value: function parseTable(lines, value) {
+            var _this2 = this;
+
             var _value = _slicedToArray(value, 2);
 
             var head = _value[0];
@@ -1222,16 +1083,21 @@ var Parser = (function () {
             var html = '<table>';
             var body = null;
 
-            var _iteratorNormalCompletion11 = true;
-            var _didIteratorError11 = false;
-            var _iteratorError11 = undefined;
+            // function* entries(obj) {
+            //   for (let key of Object.keys(obj)) {
+            //     yield [key, obj[key]];
+            //   }
+            // }
+            var _iteratorNormalCompletion7 = true;
+            var _didIteratorError7 = false;
+            var _iteratorError7 = undefined;
 
             try {
-                for (var _iterator11 = entries(lines)[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
-                    var _step11$value = _slicedToArray(_step11.value, 2);
+                for (var _iterator7 = lines[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+                    var _step7$value = _slicedToArray(_step7.value, 2);
 
-                    var key = _step11$value[0];
-                    var _line6 = _step11$value[1];
+                    var key = _step7$value[0];
+                    var _line5 = _step7$value[1];
 
                     if (key === ignore) {
                         head = false;
@@ -1239,27 +1105,27 @@ var Parser = (function () {
                         continue;
                     }
 
-                    if (_line6[0] === '|') {
-                        _line6 = _line6.substr(1);
-                        if (_line6[_line6.length - 1] === '|') {
-                            _line6 = _line6.substr(0, -1);
+                    if (_line5[0] === '|') {
+                        _line5 = _line5.substr(1);
+                        if (_line5[_line5.length - 1] === '|') {
+                            _line5 = _line5.substr(0, -1);
                         }
                     }
 
-                    _line6 = _line6.replace(/^(\|?)(.*?)\\1$/, "$2", _line6);
-                    rows = _line6.split('|').map(function (item) {
+                    _line5 = _line5.replace(/^(\|?)(.*?)\\1$/, "$2", _line5);
+                    rows = _line5.split('|').map(function (item) {
                         return item.trim();
                     });
                     var columns = [];
                     var last = -1;
 
-                    var _iteratorNormalCompletion12 = true;
-                    var _didIteratorError12 = false;
-                    var _iteratorError12 = undefined;
+                    var _iteratorNormalCompletion8 = true;
+                    var _didIteratorError8 = false;
+                    var _iteratorError8 = undefined;
 
                     try {
-                        for (var _iterator12 = rows[Symbol.iterator](), _step12; !(_iteratorNormalCompletion12 = (_step12 = _iterator12.next()).done); _iteratorNormalCompletion12 = true) {
-                            var row = _step12.value;
+                        for (var _iterator8 = rows[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
+                            var row = _step8.value;
 
                             if (row.length > 0) {
                                 last++;
@@ -1269,16 +1135,16 @@ var Parser = (function () {
                             }
                         }
                     } catch (err) {
-                        _didIteratorError12 = true;
-                        _iteratorError12 = err;
+                        _didIteratorError8 = true;
+                        _iteratorError8 = err;
                     } finally {
                         try {
-                            if (!_iteratorNormalCompletion12 && _iterator12['return']) {
-                                _iterator12['return']();
+                            if (!_iteratorNormalCompletion8 && _iterator8['return']) {
+                                _iterator8['return']();
                             }
                         } finally {
-                            if (_didIteratorError12) {
-                                throw _iteratorError12;
+                            if (_didIteratorError8) {
+                                throw _iteratorError8;
                             }
                         }
                     }
@@ -1291,49 +1157,25 @@ var Parser = (function () {
 
                     html += '<tr>';
 
-                    var _iteratorNormalCompletion13 = true;
-                    var _didIteratorError13 = false;
-                    var _iteratorError13 = undefined;
+                    _lodash2['default'].forOwn(columns, function (column, key) {
+                        var _column = _slicedToArray(column, 2);
 
-                    try {
-                        for (var _iterator13 = entries(columns)[Symbol.iterator](), _step13; !(_iteratorNormalCompletion13 = (_step13 = _iterator13.next()).done); _iteratorNormalCompletion13 = true) {
-                            var _step13$value = _slicedToArray(_step13.value, 2);
+                        var num = _column[0];
+                        var text = _column[1];
 
-                            var _key2 = _step13$value[0];
-                            var column = _step13$value[1];
+                        var tag = head ? 'th' : 'td';
 
-                            var _column = _slicedToArray(column, 2);
-
-                            var num = _column[0];
-                            var text = _column[1];
-
-                            var _tag = head ? 'th' : 'td';
-
-                            html += '<' + _tag;
-                            if (num > 1) {
-                                html += ' colspan="' + num + '"';
-                            }
-
-                            if (aligns[_key2] && aligns[_key2] != 'none') {
-                                html += ' align="' + aligns[_key2] + '"';
-                            }
-
-                            html += '>' + this.parseInline(text) + ('</' + _tag + '>');
+                        html += '<' + tag;
+                        if (num > 1) {
+                            html += ' colspan="' + num + '"';
                         }
-                    } catch (err) {
-                        _didIteratorError13 = true;
-                        _iteratorError13 = err;
-                    } finally {
-                        try {
-                            if (!_iteratorNormalCompletion13 && _iterator13['return']) {
-                                _iterator13['return']();
-                            }
-                        } finally {
-                            if (_didIteratorError13) {
-                                throw _iteratorError13;
-                            }
+
+                        if (aligns[key] && aligns[key] != 'none') {
+                            html += ' align="' + aligns[key] + '"';
                         }
-                    }
+
+                        html += '>' + _this2.parseInline(text) + ('</' + tag + '>');
+                    });
 
                     html += '</tr>';
 
@@ -1344,16 +1186,16 @@ var Parser = (function () {
                     }
                 }
             } catch (err) {
-                _didIteratorError11 = true;
-                _iteratorError11 = err;
+                _didIteratorError7 = true;
+                _iteratorError7 = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion11 && _iterator11['return']) {
-                        _iterator11['return']();
+                    if (!_iteratorNormalCompletion7 && _iterator7['return']) {
+                        _iterator7['return']();
                     }
                 } finally {
-                    if (_didIteratorError11) {
-                        throw _iteratorError11;
+                    if (_didIteratorError7) {
+                        throw _iteratorError7;
                     }
                 }
             }
@@ -1386,27 +1228,27 @@ var Parser = (function () {
     }, {
         key: 'parseNormal',
         value: function parseNormal(lines) {
-            var _iteratorNormalCompletion14 = true;
-            var _didIteratorError14 = false;
-            var _iteratorError14 = undefined;
+            var _iteratorNormalCompletion9 = true;
+            var _didIteratorError9 = false;
+            var _iteratorError9 = undefined;
 
             try {
-                for (var _iterator14 = lines[Symbol.iterator](), _step14; !(_iteratorNormalCompletion14 = (_step14 = _iterator14.next()).done); _iteratorNormalCompletion14 = true) {
-                    var _line7 = _step14.value;
+                for (var _iterator9 = lines[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
+                    var _line6 = _step9.value;
 
-                    _line7 = this.parseInline(_line7);
+                    _line6 = this.parseInline(_line6);
                 }
             } catch (err) {
-                _didIteratorError14 = true;
-                _iteratorError14 = err;
+                _didIteratorError9 = true;
+                _iteratorError9 = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion14 && _iterator14['return']) {
-                        _iterator14['return']();
+                    if (!_iteratorNormalCompletion9 && _iterator9['return']) {
+                        _iterator9['return']();
                     }
                 } finally {
-                    if (_didIteratorError14) {
-                        throw _iteratorError14;
+                    if (_didIteratorError9) {
+                        throw _iteratorError9;
                     }
                 }
             }
@@ -1464,27 +1306,27 @@ var Parser = (function () {
     }, {
         key: 'parseHtml',
         value: function parseHtml(lines, type) {
-            var _iteratorNormalCompletion15 = true;
-            var _didIteratorError15 = false;
-            var _iteratorError15 = undefined;
+            var _iteratorNormalCompletion10 = true;
+            var _didIteratorError10 = false;
+            var _iteratorError10 = undefined;
 
             try {
-                for (var _iterator15 = lines[Symbol.iterator](), _step15; !(_iteratorNormalCompletion15 = (_step15 = _iterator15.next()).done); _iteratorNormalCompletion15 = true) {
-                    var _line8 = _step15.value;
+                for (var _iterator10 = lines[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
+                    var _line7 = _step10.value;
 
-                    _line8 = this.parseInline(_line8, this.specialWhiteList[type] ? this.specialWhiteList[type] : '');
+                    _line7 = this.parseInline(_line7, this.specialWhiteList[type] ? this.specialWhiteList[type] : '');
                 }
             } catch (err) {
-                _didIteratorError15 = true;
-                _iteratorError15 = err;
+                _didIteratorError10 = true;
+                _iteratorError10 = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion15 && _iterator15['return']) {
-                        _iterator15['return']();
+                    if (!_iteratorNormalCompletion10 && _iterator10['return']) {
+                        _iterator10['return']();
                     }
                 } finally {
-                    if (_didIteratorError15) {
-                        throw _iteratorError15;
+                    if (_didIteratorError10) {
+                        throw _iteratorError10;
                     }
                 }
             }
@@ -1620,5 +1462,7 @@ var Parser = (function () {
 })();
 
 exports['default'] = Parser;
+
+var parser = new Parser();
+console.log(parser.makeHtml('##sdfsfd##'));
 module.exports = exports['default'];
-//# sourceMappingURL=Parser.js.map
