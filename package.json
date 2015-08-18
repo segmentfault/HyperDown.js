@@ -16,5 +16,8 @@
   "main": "dist/sdk.js",
   "bugs": {
     "url": "https://github.com/SegmentFault/HyperDown.js/issues"
+  },
+  "dependencies": {
+    "md5": "^2.0.0"
   }
 }
