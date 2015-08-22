@@ -89,7 +89,8 @@ class Parser {
      * @return string
      */
     parse (text) {
-        let blocks = this.parseBlock(text, text.split("\n"))
+        let lines = text.split("\n")
+        let blocks = this.parseBlock(text, lines)
         let html = ''
 
         blocks.forEach (block => {
@@ -182,8 +183,8 @@ class Parser {
         text = text.replace('<', '&lt;')
         text = text.replace('>', '&gt;')
 
-        // footnote
-        let footnotePattern = new RegExp("\[\^((?:[^\]]|\\]|\\[)+?)\]")
+        // footnote  \[\^((?:[^\]]|\\]|\\[)+?)\]
+        let footnotePattern = new RegExp("[^((?:[^]]|\]|\[)+?)]")
         let footnoteMatches = footnotePattern.exec(text)
         if(footnoteMatches) {
             id = this.footnotes.indexOf(footnoteMatches[1])
@@ -197,14 +198,14 @@ class Parser {
         }
 
         // image
-        let imagePattern1 = new RegExp("!\[((?:[^\]]|\\]|\\[)*?)\]\(([^\)]+)\)")
+        let imagePattern1 = new RegExp("![((?:[^]]|\]|\[)*?)](([^)]+))")
         let imageMatches1 = imagePattern1.exec(text)
         if (imageMatches1) {
             let escaped = this.escapeBracket(imageMatches1[1])
             text = this.makeHolder(`<img src="${imageMatches1[2]}" alt="${escaped}" title="${escaped}">`)
         }
 
-        let imagePattern2 = new RegExp("!\[((?:[^\]]|\\]|\\[)*?)\]\[((?:[^\]]|\\]|\\[)+)\]")
+        let imagePattern2 = new RegExp("![((?:[^]]|\]|\[)*?)][((?:[^]]|\]|\[)+)]")
         let imageMatches2 = imagePattern2.exec(text)
         if(imageMatches2) {
             let escaped = this.escapeBracket(imageMatches2[1])
@@ -218,15 +219,15 @@ class Parser {
         }
 
         // link
-        let linkPattern1 = new RegExp("\[((?:[^\]]|\\]|\\[)+?)\]\(([^\)]+)\)")
-        let linkMatches1 = linkMatches1.exec(text)
+        let linkPattern1 = new RegExp("[((?:[^]]|\]|\[)+?)](([^)]+))")
+        let linkMatches1 = linkPattern1.exec(text)
         if(linkMatches1) {
             let escaped = this.escapeBracket(linkMatches1[1])
             text = this.makeHolder(`<a href="${linkMatches1[2]}">${escaped}</a>`)
         }
 
-        let linkPattern2 = new regExp("\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+)\]")
-        let linkMatches2 = linkMatches2.exec(text)
+        let linkPattern2 = new RegExp("[((?:[^]]|\]|\[)+?)][((?:[^]]|\]|\[)+)]")
+        let linkMatches2 = linkPattern2.exec(text)
         if(linkMatches2) {
             let escaped = this.escapeBracket(linkMatches2[1])
 
@@ -244,9 +245,9 @@ class Parser {
         }
 
         // strong and em and some fuck
-        text = text.replace(/(\s|^)(_|\*){3}(.+?)\2{3}(\s|$)/, "$1<strong><em>$3</em></strong>$4")
-        text = text.replace(/(\s|^)(_|\*){2}(.+?)\2{2}(\s|$)/, "$1<strong>$3</strong>$4")
-        text = text.replace(/(\s|^)(_|\*)(.+?)\2(\s|$)/, "$1<em>$3</em>$4")
+        text = text.replace(/(\s|^)(_|\*){3}(.+?)\1{3}(\s|$)/, "$1<strong><em>$3</em></strong>$4")
+        text = text.replace(/(\s|^)(_|\*){2}(.+?)\1{2}(\s|$)/, "$1<strong>$3</strong>$4")
+        text = text.replace(/(\s|^)(_|\*)(.+?)\1(\s|$)/, "$1<em>$3</em>$4")
         text = text.replace(/<(https?:\/\/.+)>/i, "<a href=\"$1\">$1</a>")
 
         // autolink
@@ -276,15 +277,11 @@ class Parser {
         let special = Object.keys(this.specialWhiteList).join("|")
         let emptyCount = 0
 
-        // function* entries(obj) {
-        //     for (let key of Object.keys(obj)) {
-        //         yield [key, obj[key]];
-        //     }
-        // }
         // analyze by line
         for (let key in lines) {
             let line = lines[key]
-
+            console.log(key)
+            console.log(line)
             // code block is special
             if (matches = line.match("/^(~|`){3,}([^`~]*)$/i")) {
                 if (this.isBlock('code')) {
@@ -352,7 +349,7 @@ class Parser {
                     break
 
                 // pre
-                case /^ {4,}/.test($line):
+                case /^ {4,}/.test(line):
                     emptyCount = 0
                     if (this.isBlock('pre')) {
                         this.setBlock(key)
@@ -375,10 +372,10 @@ class Parser {
                             this.backBlock(1, 'table')
                         }
 
-                        if (tableMatches[1][0] += '|') {
+                        if (tableMatches[1][0] == '|') {
                             tableMatches[1] = tableMatches[1].substr(1)
 
-                            if (tableMatches[1][tableMatches[1].length - 1] += '|') {
+                            if (tableMatches[1][tableMatches[1].length - 1] == '|') {
                                 tableMatches[1] = tableMatches[1].substr(0, -1)
                             }
                         }
@@ -410,7 +407,7 @@ class Parser {
                     let singleHeadingMatches = line.match(/^(#+)(.*)$/)
                     let num = Math.min(singleHeadingMatches[1].length, 6)
                     this.startBlock('sh', key, num)
-                        endBlock()
+                        .endBlock()
                     break
 
                 // multi heading
@@ -418,7 +415,7 @@ class Parser {
                     && (this.getBlock() && !/^\s*$/.test(lines[this.getBlock()[2]])):    // check if last line isn't empty
                     let multiHeadingMatches = line.match(/^\s*((=|-){2,})\s*$/)
                     if (this.isBlock('normal')) {
-                        this.backBlock(1, 'mh', multiHeadingMatches[1][0] += '=' ? 1 : 2)
+                        this.backBlock(1, 'mh', multiHeadingMatches[1][0] == '=' ? 1 : 2)
                             .setBlock(key)
                             .endBlock()
                     } else {
@@ -446,7 +443,7 @@ class Parser {
                     if (this.isBlock('list')) {
                         let matches = line.match(/^(\s*)/)
 
-                        if (line.length += matches[1].length) { // empty line
+                        if (line.length == matches[1].length) { // empty line
                             if (emptyCount > 0) {
                                 this.startBlock('normal', key)
                             } else {
@@ -462,7 +459,7 @@ class Parser {
                     } else if (this.isBlock('footnote')) {
                         let matches = line.match(/^(\s*)/)
 
-                        if (matches[1].length += this.getBlock()[3][0]) {
+                        if (matches[1].length >= this.getBlock()[3][0]) {
                             this.setBlock(key)
                         } else {
                             this.startBlock('normal', key)
@@ -486,9 +483,9 @@ class Parser {
                             this.startBlock('normal', key)
                         }
                     } else {
-                        block = this.getBlock()
-
-                        if (block.length === 0 || block[0] !== 'normal') {
+                        let block = this.getBlock()
+                        console.log(block)
+                        if (!block || block[0] !== 'normal') {
                             this.startBlock('normal', key)
                         } else {
                             this.setBlock(key)
@@ -506,26 +503,19 @@ class Parser {
      * @param array lines
      * @return array
      */
-    optimizeBlocks(blocks, lines)
-    {
+    optimizeBlocks(blocks, lines) {
         blocks = this.call('beforeOptimizeBlocks', blocks, lines)
 
-        _forOwn(blocks, (block, key) => {
+        _.forOwn(blocks, (block, key) => {
             let prevBlock = blocks[key - 1] ? blocks[key - 1] : null
-            let nextBlock = $blocks[key + 1] ? blocks[key + 1] : null
+            let nextBlock = blocks[key + 1] ? blocks[key + 1] : null
 
             let [type, from, to] = block
 
             if ('pre' === type) {
-                let isEmpty = true
-
-                for (let i = from; i += to; i ++) {
-                    line = lines[i]
-                    if (!line.match(/^\s*$/)) {
-                        isEmpty = false
-                        break
-                    }
-                }
+                let isEmpty = lines.reduce(function (result, line) {
+                    return line.match("/^\s*$/") && result;
+                }, true);
 
                 if (isEmpty) {
                     block[0] = type = 'normal'
@@ -585,8 +575,13 @@ class Parser {
      * @return string
      */
     parseSh(lines, num) {
-        let line = this.parseInline(lines[0].trim().replace(/^#+|#+$/g, ''))
-        return `<h${num}>${line}</h${num}>`
+        console.log(lines)
+        if(lines[0]) {
+            let line = this.parseInline(lines[0].trim().replace(/^#+|#+$/g, ''))
+            return line.match(/^\s*$/) ? '' : `<h${num}>${line}</h${num}>`
+        } else {
+            return `<h${num}></h${num}>`
+        }
     }
 
     /**
@@ -888,8 +883,8 @@ class Parser {
      * @return bool
      */
     isBlock(type, value = null) {
-        return this.current += type
-            && (null === value ? true : this.blocks[this.pos][3] += value)
+        return this.current == type
+            && (null === value ? true : this.blocks[this.pos][3] == value)
     }
 
     /**
@@ -898,6 +893,7 @@ class Parser {
      * @return array
      */
     getBlock() {
+        console.log(this.pos)
         return this.blocks[this.pos] ? this.blocks[this.pos] : null
     }
 
@@ -909,6 +905,7 @@ class Parser {
      * @return this
      */
     setBlock(to = null, value = null) {
+        console.log(this.blocks)
         if (null !== to) {
             this.blocks[this.pos][2] = to
         }
@@ -936,7 +933,7 @@ class Parser {
         let last = this.blocks[this.pos][2]
         this.blocks[this.pos][2] = last - step
 
-        if (this.blocks[this.pos][1] += this.blocks[this.pos][2]) {
+        if (this.blocks[this.pos][1] <= this.blocks[this.pos][2]) {
             this.pos++
         }
 
@@ -948,4 +945,4 @@ class Parser {
 }
 
 var parser = new Parser()
-console.log(parser.makeHtml('sdfsfd\n_sdsd_'))
+console.log(parser.makeHtml('#qw#\n__sdsd__\nasfsadf'))
