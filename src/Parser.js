@@ -945,4 +945,12 @@ class Parser {
 }
 
 var parser = new Parser()
-console.log(parser.makeHtml('#qw#\n__sdsd__\nasfsadf'))
+// console.log(parser.makeHtml('#qw#\n__sdsd__\nasfsadf'))
+
+if (typeof module !== 'undefined' && typeof exports === 'object') {
+  module.exports = parser.makeHtml
+} else if (typeof define === 'function' && define.amd) {
+  define(function() { return parser.makeHtml });
+} else {
+  this.hyperdown = parser.makeHtml
+}
