@@ -252,6 +252,8 @@ export default class Parser {
         text = text.replace(/(^|[^\"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,]+)($|[^\"])/i,
             "$1<a href=\"$2\">$2</a>$4")
 
+        text = this.call('afterParseInlineBeforeRelease', text);
+
         // release
         text = this.releaseHolder(text)
 
