@@ -6,10 +6,9 @@
  * @license BSD License
  */
 
-import _ from 'lodash'
 import md5 from 'md5'
 
-class Parser {
+export default class Parser {
     constructor () {
         this.commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a|hr|small'
         this.specialWhiteList = {
@@ -21,7 +20,7 @@ class Parser {
         this.pos = -1
         this.definitions = []
         this.hooks = {}
-        this.holders = {}
+        this.holders = new Map()
         this.uniqid = md5((new Date()).getTime())
         this.id = 0
     }
@@ -43,7 +42,18 @@ class Parser {
      * @param callback
      */
     hook (type, callback) {
-        this.hooks[type] = callback
+        this.hooks[type].push(callback)
+    }
+
+    /**
+     * @param str
+     * @return string
+     */
+    makeHolder (str) {
+        key = '|' + this.uniqid + this.id + '|'
+        this.id++
+        this.holders[key] = str
+        return key
     }
 
     /**
@@ -91,16 +101,17 @@ class Parser {
     parse (text) {
         let lines = text.split("\n")
         let blocks = this.parseBlock(text, lines)
+        console.log(blocks)
         let html = ''
 
         blocks.forEach (block => {
             let [type, start, end, value] = block
             let extract = lines.slice(start, end - start + 1)
-            let method = 'parse' + _.capitalize(type)
+            let method = 'parse' + type.slice(0,1).toUpperCase() + type.slice(1)
 
-            extract = this.call('before' + _.capitalize(method), extract, value)
+            extract = this.call('before' + method.slice(0,1).toUpperCase() + method.slice(1), extract, value)
             let result = this[method](extract, value)
-            result = this.call('after' + _.capitalize(method), result, value)
+            result = this.call('after' + method.slice(0,1).toUpperCase() + method.slice(1), result, value)
 
             html += result
         })
@@ -129,28 +140,16 @@ class Parser {
     }
 
     /**
-     * @param str
-     * @return string
-     */
-    makeHolder (str) {
-        let key = '|' + this.uniqid + this.id + '|'
-        this.id++
-        this.holders[key] = str;
-
-        return key;
-    }
-
-    /**
      * @param text
      * @return string
      */
     releaseHolder(text) {
-        _.forOwn(this.holders, (value, key) => {
+        for (let [key, value] of this.holders.entries()) {
             text = text.replace(key, value)
-        })
-        this.holders = [];
+        }
+        this.holders.clear()
 
-        return text;
+        return text
     }
 
     /**
@@ -166,7 +165,7 @@ class Parser {
         // code
         let codeMatches = /(^|[^\\])`(.+?)`/.exec(text)
         if (codeMatches) {
-            text = codeMatches[1] + this.makeHolder('<code>' + htmlspecialchars(codeMatches[2]) + '</code>')
+            text = codeMatches[1] + this.makeHolder('<code>' + this.htmlspecialchars(codeMatches[2]) + '</code>')
         }
 
         // escape unsafe tags
@@ -176,18 +175,17 @@ class Parser {
             if (whiteLists.toLowerCase().indexOf(unsafeTagMatches[2].toLowerCase()) !== -1) {
                 return this.makeHolder(unsafeTagMatches[0])
             } else {
-                return htmlspecialchars(unsafeTagMatches[0])
+                return this.htmlspecialchars(unsafeTagMatches[0])
             }
         }
 
         text = text.replace('<', '&lt;')
         text = text.replace('>', '&gt;')
 
-        // footnote  \[\^((?:[^\]]|\\]|\\[)+?)\]
         let footnotePattern = new RegExp("[^((?:[^]]|\]|\[)+?)]")
         let footnoteMatches = footnotePattern.exec(text)
         if(footnoteMatches) {
-            id = this.footnotes.indexOf(footnoteMatches[1])
+            let id = this.footnotes.indexOf(footnoteMatches[1])
 
             if (id === -1) {
                 id = this.footnotes.length + 1
@@ -241,7 +239,7 @@ class Parser {
         // escape
         let escapeMatches = /\\(`|\*|_)/.exec(text)
         if (escapeMatches) {
-            text = this.makeHolder(htmlspecialchars(escapeMatches[1]))
+            text = this.makeHolder(this.htmlspecialchars(escapeMatches[1]))
         }
 
         // strong and em and some fuck
@@ -276,12 +274,9 @@ class Parser {
         this.pos = -1
         let special = Object.keys(this.specialWhiteList).join("|")
         let emptyCount = 0
-
         // analyze by line
         for (let key in lines) {
             let line = lines[key]
-            console.log(key)
-            console.log(line)
             // code block is special
             if (matches = line.match("/^(~|`){3,}([^`~]*)$/i")) {
                 if (this.isBlock('code')) {
@@ -327,7 +322,7 @@ class Parser {
 
                     // opened
                     if (this.isBlock('list')) {
-                        this.setBlock(key, space)
+                        this.setBlock(key, listSpace)
                     } else {
                         this.startBlock('list', key, listSpace)
                     }
@@ -337,7 +332,7 @@ class Parser {
                 case /^\[\^((?:[^\]]|\]|\[)+?)\]:/.test(line):
                     let footnoteMatches = line.match(/^\[\^((?:[^\]]|\]|\[)+?)\]:/)
                     let footnoteSpace = footnoteMatches[0].length - 1
-                    this.startBlock('footnote', key, [footnoteSpace, footNoteMatches[1]])
+                    this.startBlock('footnote', key, [footnoteSpace, footnoteMatches[1]])
                     break
 
                 // definition
@@ -451,7 +446,7 @@ class Parser {
                             }
 
                             emptyCount++
-                        } else if (matches[1].length >= this.getBlock()[3] && emptyCount == 0) {
+                        } else if (emptyCount == 0) {
                             this.setBlock(key)
                         } else {
                             this.startBlock('normal', key)
@@ -484,8 +479,7 @@ class Parser {
                         }
                     } else {
                         let block = this.getBlock()
-                        console.log(block)
-                        if (!block || block[0] !== 'normal') {
+                        if (!block || !block.length || block[0] !== 'normal') {
                             this.startBlock('normal', key)
                         } else {
                             this.setBlock(key)
@@ -506,7 +500,7 @@ class Parser {
     optimizeBlocks(blocks, lines) {
         blocks = this.call('beforeOptimizeBlocks', blocks, lines)
 
-        _.forOwn(blocks, (block, key) => {
+        blocks.forEach(function(block, key) {
             let prevBlock = blocks[key - 1] ? blocks[key - 1] : null
             let nextBlock = blocks[key + 1] ? blocks[key + 1] : null
 
@@ -548,9 +542,10 @@ class Parser {
     parseCode(lines, lang) {
         lang = lang.trim()
         lines = lines.slice(1, -1)
+        let str = lines.join('\n')
 
-        return '<pre><code' + (lang ? ` class="${lang}"` : '') + '>'
-            . htmlspecialchars(lines.join("\n")) + '</code></pre>'
+        return /^\s*$/.test(str) ? '' : '<pre><code' + (lang ? ` class="${lang}"` : '') + '>'
+            + this.htmlspecialchars(lines.join("\n")) + '</code></pre>'
     }
 
     /**
@@ -561,10 +556,11 @@ class Parser {
      */
     parsePre(lines) {
         for (let line of lines) {
-            line = htmlspecialchars(line.substr(4))
+            line = this.htmlspecialchars(line.substr(4))
         }
+        let str = lines.join('\n')
 
-        return '<pre><code>' + lines.join("\n") + '</code></pre>'
+        return /^\s*$/.test(str) ? '' : '<pre><code>' + str + '</code></pre>';
     }
 
     /**
@@ -575,12 +571,11 @@ class Parser {
      * @return string
      */
     parseSh(lines, num) {
-        console.log(lines)
         if(lines[0]) {
             let line = this.parseInline(lines[0].trim().replace(/^#+|#+$/g, ''))
-            return line.match(/^\s*$/) ? '' : `<h${num}>${line}</h${num}>`
+            return /^\s*$/.test(line) ? '' : `<h${num}>${line}</h${num}>`
         } else {
-            return `<h${num}></h${num}>`
+            return ``
         }
     }
 
@@ -592,8 +587,12 @@ class Parser {
      * @return string
      */
     parseMh(lines, num) {
-        let line = this.parseInline(lines[0].trim().replace(/^#+|#+$/g, ''))
-        return `<h${num}>${line}</h${num}>`
+        if (lines[0]) {
+            let line = this.parseInline(lines[0].trim().replace(/^#+|#+$/g, ''))
+            return /^\s*$/.test(line) ? '' : `<h${num}>${line}</h${num}>`
+        } else {
+            return ''
+        }
     }
 
     /**
@@ -606,8 +605,8 @@ class Parser {
         for (let line of lines) {
             line = line.replace(/^> ?/, '')
         }
-
-        return '<blockquote>' + this.parse(lines.join("\n")) + '</blockquote>'
+        let str = lines.join('\n')
+        return /^\s*$/.test(str) ? '' : '<blockquote>' + this.parse(str) + '</blockquote>'
     }
 
     /**
@@ -617,12 +616,12 @@ class Parser {
      * @return string
      */
     parseList(lines) {
-        html = ''
-        minSpace = 99999
-        rows = []
+        let html = ''
+        let minSpace = 99999
+        let rows = []
 
         // count levels
-        _.forOwn (lines, (line, key) => {
+        lines.forEach( (line, key) => {
             let matches = line.match(/^(\s*)((?:[0-9a-z]\.?)|\-|\+|\*)(\s+)(.*)$/)
             if (matches) {
                 let space = matches[1].length
@@ -677,8 +676,8 @@ class Parser {
             }
         }
 
-        if ($leftLines) {
-            html += "<li>" + this.parse(lefftLines.join("\n")) + `</li></${lastType}>`
+        if (leftLines) {
+            html += "<li>" + this.parse(leftLines.join("\n")) + `</li></${lastType}>`
         }
 
         return html
@@ -737,7 +736,7 @@ class Parser {
 
             html += '<tr>'
 
-            _.forOwn (columns, (column, key) => {
+            columns.forEach( (column, key) => {
                 let [num, text] = column
                 let tag = head ? 'th' : 'td'
 
@@ -794,7 +793,7 @@ class Parser {
         str = str.replace(/(\n\s*){2,}/, "</p><p>")
         str = str.replace(/\n/, "<br>")
 
-        return !str ? '' : `<p>${str}</p>`
+        return /^\s*$/.test(str) ? '' : `<p>${str}</p>`
     }
 
     /**
@@ -809,7 +808,9 @@ class Parser {
         let index = this.footnotes.indexOf(note)
 
         if (false !== index) {
-            lines[0] = lines[0].replace(/^\[\^((?:[^\]]|\]|\[)+?)\]:/, '')
+            if(lines[0]) {
+                lines[0] = lines[0].replace(/^\[\^((?:[^\]]|\]|\[)+?)\]:/, '')
+            }
             this.footnotes[index] = lines
         }
 
@@ -846,7 +847,11 @@ class Parser {
      * @return mixed
      */
     escapeBracket(str) {
-        return str.replace(['[', ']'], ['[', ']'])
+        str = str.replace('\[', '[')
+        str = str.replace('\]', ']')
+        str = str.replace('\(', '(')
+        str = str.replace('\)', ')')
+        return str
     }
 
     /**
@@ -893,7 +898,6 @@ class Parser {
      * @return array
      */
     getBlock() {
-        console.log(this.pos)
         return this.blocks[this.pos] ? this.blocks[this.pos] : null
     }
 
@@ -905,7 +909,6 @@ class Parser {
      * @return this
      */
     setBlock(to = null, value = null) {
-        console.log(this.blocks)
         if (null !== to) {
             this.blocks[this.pos][2] = to
         }
@@ -942,15 +945,22 @@ class Parser {
 
         return this
     }
-}
 
-var parser = new Parser()
-// console.log(parser.makeHtml('#qw#\n__sdsd__\nasfsadf'))
+    /**
+     * htmlspecialchars
+     *
+     * @param text
+     * @return string
+     */
+    htmlspecialchars (text) {
+        let map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        }
 
-if (typeof module !== 'undefined' && typeof exports === 'object') {
-  module.exports = parser.makeHtml
-} else if (typeof define === 'function' && define.amd) {
-  define(function() { return parser.makeHtml });
-} else {
-  this.hyperdown = parser.makeHtml
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
 }
