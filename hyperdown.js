@@ -121,7 +121,7 @@
 	    }, {
 	        key: 'makeHolder',
 	        value: function makeHolder(str) {
-	            key = '|' + this.uniqid + this.id + '|';
+	            var key = '|' + this.uniqid + this.id + '|';
 	            this.id++;
 	            this.holders[key] = str;
 	            return key;
@@ -134,8 +134,12 @@
 	    }, {
 	        key: 'initText',
 	        value: function initText(text) {
-	            text = text.replace('\t', '    ');
-	            text = text.replace('\r', '');
+	            if (text) {
+	                text = text.replace('\t', '    ');
+	                text = text.replace('\r', '');
+	            } else {
+	                text = '';
+	            }
 	            return text;
 	        }
 
@@ -180,7 +184,6 @@
 
 	            var lines = text.split("\n");
 	            var blocks = this.parseBlock(text, lines);
-	            console.log(blocks);
 	            var html = '';
 
 	            blocks.forEach(function (block) {
@@ -191,10 +194,10 @@
 	                var end = _block[2];
 	                var value = _block[3];
 
-	                var extract = lines.slice(start, end - start + 1);
+	                var extract = lines.slice(start, end + 1);
 	                var method = 'parse' + type.slice(0, 1).toUpperCase() + type.slice(1);
-
-	                extract = _this.call('before' + method.slice(0, 1).toUpperCase() + method.slice(1), extract, value);
+	                var beforeMethod = 'beforeParse' + type.slice(0, 1).toUpperCase() + type.slice(1);
+	                extract = _this.call(beforeMethod, extract, value);
 	                var result = _this[method](extract, value);
 	                result = _this.call('after' + method.slice(0, 1).toUpperCase() + method.slice(1), result, value);
 
@@ -245,10 +248,10 @@
 	                for (var _iterator = this.holders.entries()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
 	                    var _step$value = _slicedToArray(_step.value, 2);
 
-	                    var _key2 = _step$value[0];
+	                    var key = _step$value[0];
 	                    var value = _step$value[1];
 
-	                    text = text.replace(_key2, value);
+	                    text = text.replace(key, value);
 	                }
 	            } catch (err) {
 	                _didIteratorError = true;
@@ -318,14 +321,15 @@
 	            }
 
 	            // image
-	            var imagePattern1 = new RegExp("![((?:[^]]|\]|\[)*?)](([^)]+))");
+	            var imagePattern1 = new RegExp("/!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/");
 	            var imageMatches1 = imagePattern1.exec(text);
 	            if (imageMatches1) {
 	                var escaped = this.escapeBracket(imageMatches1[1]);
-	                text = this.makeHolder('<img src="' + imageMatches1[2] + '" alt="' + escaped + '" title="' + escaped + '">');
+	                var url = this.escapeBracket(imageMatches1[2]);
+	                text = this.makeHolder('<img src="' + url + '" alt="' + escaped + '" title="' + escaped + '">');
 	            }
 
-	            var imagePattern2 = new RegExp("![((?:[^]]|\]|\[)*?)][((?:[^]]|\]|\[)+)]");
+	            var imagePattern2 = new RegExp("!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]");
 	            var imageMatches2 = imagePattern2.exec(text);
 	            if (imageMatches2) {
 	                var escaped = this.escapeBracket(imageMatches2[1]);
@@ -339,14 +343,15 @@
 	            }
 
 	            // link
-	            var linkPattern1 = new RegExp("[((?:[^]]|\]|\[)+?)](([^)]+))");
+	            var linkPattern1 = new RegExp("\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)");
 	            var linkMatches1 = linkPattern1.exec(text);
 	            if (linkMatches1) {
 	                var escaped = this.escapeBracket(linkMatches1[1]);
-	                text = this.makeHolder('<a href="' + linkMatches1[2] + '">' + escaped + '</a>');
+	                var url = this.escapeBracket(linkMatches1[2]);
+	                text = this.makeHolder('<a href="' + url + '">' + escaped + '</a>');
 	            }
 
-	            var linkPattern2 = new RegExp("[((?:[^]]|\]|\[)+?)][((?:[^]]|\]|\[)+)]");
+	            var linkPattern2 = new RegExp("\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]");
 	            var linkMatches2 = linkPattern2.exec(text);
 	            if (linkMatches2) {
 	                var escaped = this.escapeBracket(linkMatches2[1]);
@@ -363,19 +368,19 @@
 	            }
 
 	            // strong and em and some fuck
-	            text = text.replace(/(\s|^)(_|\*){3}(.+?)\1{3}(\s|$)/, "$1<strong><em>$3</em></strong>$4");
-	            text = text.replace(/(\s|^)(_|\*){2}(.+?)\1{2}(\s|$)/, "$1<strong>$3</strong>$4");
-	            text = text.replace(/(\s|^)(_|\*)(.+?)\1(\s|$)/, "$1<em>$3</em>$4");
+	            text = text.replace(/(_|\*){2}(.+?)\1{2}/, "<strong><em>$2</em></strong>");
+	            text = text.replace(/(_|\*){1}(.+?)\1{1}/, "<strong>$2</strong>");
+	            text = text.replace(/(_|\*)(.+?)\1/, "<em>$2</em>");
 	            text = text.replace(/<(https?:\/\/.+)>/i, "<a href=\"$1\">$1</a>");
+	            text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i, "<a href=\"mailto:$1\">$1</a>");
 
 	            // autolink
-	            text = text.replace(/(^|[^\"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,]+)($|[^\"])/i, "$1<a href=\"$2\">$2</a>$4");
+	            text = text.replace(/(^|[^"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,]+)($|[^"])/i, "$1<a href=\"$2\">$2</a>$4");
 
 	            text = this.call('afterParseInlineBeforeRelease', text);
 
 	            // release
 	            text = this.releaseHolder(text);
-
 	            text = this.call('afterParseInline', text);
 
 	            return text;
@@ -390,47 +395,48 @@
 	         */
 	    }, {
 	        key: 'parseBlock',
-	        value: function parseBlock(text) {
-	            var lines = text.split("\n");
+	        value: function parseBlock(text, lines) {
 	            this.blocks = [];
 	            this.current = 'normal';
 	            this.pos = -1;
 	            var special = Object.keys(this.specialWhiteList).join("|");
 	            var emptyCount = 0;
 	            // analyze by line
-	            for (var _key3 in lines) {
-	                var line = lines[_key3];
+	            for (var key in lines) {
+	                var line = lines[key];
 	                // code block is special
-	                if (matches = line.match("/^(~|`){3,}([^`~]*)$/i")) {
+	                if (matches = line.match(/^(~|`){3,}([^`~]*)$/i)) {
 	                    if (this.isBlock('code')) {
-	                        this.setBlock(_key3).endBlock();
+	                        this.setBlock(key).endBlock();
 	                    } else {
-	                        this.startBlock('code', _key3, matches[2]);
+	                        this.startBlock('code', key, matches[2]);
 	                    }
 	                    continue;
 	                } else if (this.isBlock('code')) {
-	                    this.setBlock(_key3);
+	                    this.setBlock(key);
 	                    continue;
 	                }
 
 	                // html block is special too
-	                if (matches = line.match(/^\s*<({$special})(\s+[^>]*)?>/i)) {
+	                var htmlPattern1 = new RegExp('^\s*<(' + special + ')(\s+[^>]*)?>', 'i');
+	                var htmlPattern2 = new RegExp('<\/(' + special + ')>\s*$', 'i');
+	                if (matches = line.match(htmlPattern1)) {
 	                    tag = matches[1].toLowerCase();
 	                    if (!this.isBlock('html', tag) && !this.isBlock('pre')) {
-	                        this.startBlock('html', _key3, tag);
+	                        this.startBlock('html', key, tag);
 	                    }
 
 	                    continue;
-	                } else if (matches = line.match(/<\/({$special})>\s*$/i)) {
+	                } else if (matches = line.match(htmlPattern2)) {
 	                    tag = matches[1].toLowerCase();
 
 	                    if (this.isBlock('html', tag)) {
-	                        this.setBlock(_key3).endBlock();
+	                        this.setBlock(key).endBlock();
 	                    }
 
 	                    continue;
 	                } else if (this.isBlock('html')) {
-	                    this.setBlock(_key3);
+	                    this.setBlock(key);
 	                    continue;
 	                }
 
@@ -443,9 +449,9 @@
 
 	                        // opened
 	                        if (this.isBlock('list')) {
-	                            this.setBlock(_key3, listSpace);
+	                            this.setBlock(key, listSpace);
 	                        } else {
-	                            this.startBlock('list', _key3, listSpace);
+	                            this.startBlock('list', key, listSpace);
 	                        }
 	                        break;
 
@@ -453,23 +459,23 @@
 	                    case /^\[\^((?:[^\]]|\]|\[)+?)\]:/.test(line):
 	                        var footnoteMatches = line.match(/^\[\^((?:[^\]]|\]|\[)+?)\]:/);
 	                        var footnoteSpace = footnoteMatches[0].length - 1;
-	                        this.startBlock('footnote', _key3, [footnoteSpace, footnoteMatches[1]]);
+	                        this.startBlock('footnote', key, [footnoteSpace, footnoteMatches[1]]);
 	                        break;
 
 	                    // definition
 	                    case /^\s*\[((?:[^\]]|\]|\[)+?)\]:\s*(.+)$/.test(line):
 	                        var definitionMatches = line.match(/^\s*\[((?:[^\]]|\]|\[)+?)\]:\s*(.+)$/);
 	                        this.definitions[definitionMatches[1]] = definitionMatches[2];
-	                        this.startBlock('definition', _key3).endBlock();
+	                        this.startBlock('definition', key).endBlock();
 	                        break;
 
 	                    // pre
 	                    case /^ {4,}/.test(line):
 	                        emptyCount = 0;
 	                        if (this.isBlock('pre')) {
-	                            this.setBlock(_key3);
+	                            this.setBlock(key);
 	                        } else if (this.isBlock('normal')) {
-	                            this.startBlock('pre', _key3);
+	                            this.startBlock('pre', key);
 	                        }
 	                        break;
 
@@ -480,8 +486,8 @@
 	                            var block = this.getBlock();
 	                            var head = false;
 
-	                            if (block.length === 0 || block[0] !== 'normal' || /^\s*$/.exec(lines[block[2]])) {
-	                                this.startBlock('table', _key3);
+	                            if (block.length === 0 || block[0] !== 'normal' || /^\s*$/.test(lines[block[2]])) {
+	                                this.startBlock('table', key);
 	                            } else {
 	                                head = true;
 	                                this.backBlock(1, 'table');
@@ -491,28 +497,28 @@
 	                                tableMatches[1] = tableMatches[1].substr(1);
 
 	                                if (tableMatches[1][tableMatches[1].length - 1] == '|') {
-	                                    tableMatches[1] = tableMatches[1].substr(0, -1);
+	                                    tableMatches[1] = tableMatches[1].slice(0, -1);
 	                                }
 	                            }
 
-	                            var _rows = tableMatches[1].split(/(\+|\|)/);
+	                            var rows = tableMatches[1].split(/(\+|\|)/);
 	                            var aligns = [];
 	                            var _iteratorNormalCompletion2 = true;
 	                            var _didIteratorError2 = false;
 	                            var _iteratorError2 = undefined;
 
 	                            try {
-	                                for (var _iterator2 = _rows[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	                                for (var _iterator2 = rows[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
 	                                    var row = _step2.value;
 
 	                                    var align = 'none';
 
 	                                    if (tableMatches = row.match(/^\s*(:?)\-+(:?)\s*$/)) {
-	                                        if (!tableMatches[1] && !tableMatches[2]) {
+	                                        if (tableMatches[1] && tableMatches[2]) {
 	                                            align = 'center';
-	                                        } else if (!tableMatches[1]) {
+	                                        } else if (tableMatches[1]) {
 	                                            align = 'left';
-	                                        } else if (!tableMatches[2]) {
+	                                        } else if (tableMatches[2]) {
 	                                            align = 'right';
 	                                        }
 	                                    }
@@ -534,7 +540,7 @@
 	                                }
 	                            }
 
-	                            this.setBlock(_key3, [head, aligns]);
+	                            this.setBlock(key, [head, aligns]);
 	                        }
 	                        break;
 
@@ -542,7 +548,7 @@
 	                    case /^(#+)(.*)$/.test(line):
 	                        var singleHeadingMatches = line.match(/^(#+)(.*)$/);
 	                        var num = Math.min(singleHeadingMatches[1].length, 6);
-	                        this.startBlock('sh', _key3, num).endBlock();
+	                        this.startBlock('sh', key, num).endBlock();
 	                        break;
 
 	                    // multi heading
@@ -550,24 +556,24 @@
 	                        // check if last line isn't empty
 	                        var multiHeadingMatches = line.match(/^\s*((=|-){2,})\s*$/);
 	                        if (this.isBlock('normal')) {
-	                            this.backBlock(1, 'mh', multiHeadingMatches[1][0] == '=' ? 1 : 2).setBlock(_key3).endBlock();
+	                            this.backBlock(1, 'mh', multiHeadingMatches[1][0] == '=' ? 1 : 2).setBlock(key).endBlock();
 	                        } else {
-	                            this.startBlock('normal', _key3);
+	                            this.startBlock('normal', key);
 	                        }
 	                        break;
 
 	                    // block quote
 	                    case /^>/.test(line):
 	                        if (this.isBlock('quote')) {
-	                            this.setBlock(_key3);
+	                            this.setBlock(key);
 	                        } else {
-	                            this.startBlock('quote', _key3);
+	                            this.startBlock('quote', key);
 	                        }
 	                        break;
 
 	                    // hr
 	                    case /^[-\*]{3,}\s*$/.test(line):
-	                        this.startBlock('hr', _key3).endBlock();
+	                        this.startBlock('hr', key).endBlock();
 	                        break;
 
 	                    // normal
@@ -578,49 +584,49 @@
 	                            if (line.length == _matches[1].length) {
 	                                // empty line
 	                                if (emptyCount > 0) {
-	                                    this.startBlock('normal', _key3);
+	                                    this.startBlock('normal', key);
 	                                } else {
-	                                    this.setBlock(_key3);
+	                                    this.setBlock(key);
 	                                }
 
 	                                emptyCount++;
 	                            } else if (emptyCount == 0) {
-	                                this.setBlock(_key3);
+	                                this.setBlock(key);
 	                            } else {
-	                                this.startBlock('normal', _key3);
+	                                this.startBlock('normal', key);
 	                            }
 	                        } else if (this.isBlock('footnote')) {
 	                            var _matches2 = line.match(/^(\s*)/);
 
 	                            if (_matches2[1].length >= this.getBlock()[3][0]) {
-	                                this.setBlock(_key3);
+	                                this.setBlock(key);
 	                            } else {
-	                                this.startBlock('normal', _key3);
+	                                this.startBlock('normal', key);
 	                            }
 	                        } else if (this.isBlock('table')) {
 	                            if (-1 !== line.indexOf('|')) {
-	                                this.setBlock(_key3);
+	                                this.setBlock(key);
 	                            } else {
-	                                this.startBlock('normal', _key3);
+	                                this.startBlock('normal', key);
 	                            }
 	                        } else if (this.isBlock('pre')) {
 	                            if (/^\s*$/.test(line)) {
 	                                if (emptyCount > 0) {
-	                                    this.startBlock('normal', _key3);
+	                                    this.startBlock('normal', key);
 	                                } else {
-	                                    this.setBlock(_key3);
+	                                    this.setBlock(key);
 	                                }
 
 	                                emptyCount++;
 	                            } else {
-	                                this.startBlock('normal', _key3);
+	                                this.startBlock('normal', key);
 	                            }
 	                        } else {
 	                            var block = this.getBlock();
 	                            if (!block || !block.length || block[0] !== 'normal') {
-	                                this.startBlock('normal', _key3);
+	                                this.startBlock('normal', key);
 	                            } else {
-	                                this.setBlock(_key3);
+	                                this.setBlock(key);
 	                            }
 	                        }
 	                        break;
@@ -652,7 +658,7 @@
 
 	                if ('pre' === type) {
 	                    var isEmpty = lines.reduce(function (result, line) {
-	                        return line.match("/^\s*$/") && result;
+	                        return line.match(/^\s*$/) && result;
 	                    }, true);
 
 	                    if (isEmpty) {
@@ -780,31 +786,9 @@
 	    }, {
 	        key: 'parseQuote',
 	        value: function parseQuote(lines) {
-	            var _iteratorNormalCompletion4 = true;
-	            var _didIteratorError4 = false;
-	            var _iteratorError4 = undefined;
-
-	            try {
-	                for (var _iterator4 = lines[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-	                    var line = _step4.value;
-
-	                    line = line.replace(/^> ?/, '');
-	                }
-	            } catch (err) {
-	                _didIteratorError4 = true;
-	                _iteratorError4 = err;
-	            } finally {
-	                try {
-	                    if (!_iteratorNormalCompletion4 && _iterator4['return']) {
-	                        _iterator4['return']();
-	                    }
-	                } finally {
-	                    if (_didIteratorError4) {
-	                        throw _iteratorError4;
-	                    }
-	                }
-	            }
-
+	            lines.forEach(function (line, key) {
+	                lines[key] = line.replace(/^> ?/, '');
+	            });
 	            var str = lines.join('\n');
 	            return (/^\s*$/.test(str) ? '' : '<blockquote>' + this.parse(str) + '</blockquote>'
 	            );
@@ -819,6 +803,8 @@
 	    }, {
 	        key: 'parseList',
 	        value: function parseList(lines) {
+	            var _this2 = this;
+
 	            var html = '';
 	            var minSpace = 99999;
 	            var rows = [];
@@ -839,30 +825,30 @@
 
 	            var found = false;
 	            var secondMinSpace = 99999;
-	            var _iteratorNormalCompletion5 = true;
-	            var _didIteratorError5 = false;
-	            var _iteratorError5 = undefined;
+	            var _iteratorNormalCompletion4 = true;
+	            var _didIteratorError4 = false;
+	            var _iteratorError4 = undefined;
 
 	            try {
-	                for (var _iterator5 = rows[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-	                    var row = _step5.value;
+	                for (var _iterator4 = rows[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+	                    var row = _step4.value;
 
 	                    if (Array.isArray(row) && row[0] != minSpace) {
-	                        secondMinSpace = min(secondMinSpace, row[0]);
+	                        secondMinSpace = Math.min(secondMinSpace, row[0]);
 	                        found = true;
 	                    }
 	                }
 	            } catch (err) {
-	                _didIteratorError5 = true;
-	                _iteratorError5 = err;
+	                _didIteratorError4 = true;
+	                _iteratorError4 = err;
 	            } finally {
 	                try {
-	                    if (!_iteratorNormalCompletion5 && _iterator5['return']) {
-	                        _iterator5['return']();
+	                    if (!_iteratorNormalCompletion4 && _iterator4['return']) {
+	                        _iterator4['return']();
 	                    }
 	                } finally {
-	                    if (_didIteratorError5) {
-	                        throw _iteratorError5;
+	                    if (_didIteratorError4) {
+	                        throw _iteratorError4;
 	                    }
 	                }
 	            }
@@ -872,60 +858,39 @@
 	            var lastType = '';
 	            var leftLines = [];
 
-	            var _iteratorNormalCompletion6 = true;
-	            var _didIteratorError6 = false;
-	            var _iteratorError6 = undefined;
+	            rows.forEach(function (row) {
+	                if (Array.isArray(row)) {
+	                    var _row = _slicedToArray(row, 4);
 
-	            try {
-	                for (var _iterator6 = rows[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
-	                    var row = _step6.value;
+	                    var space = _row[0];
+	                    var type = _row[1];
+	                    var line = _row[2];
+	                    var text = _row[3];
 
-	                    if (Array.isArray(row)) {
-	                        var _row = _slicedToArray(row, 4);
-
-	                        var space = _row[0];
-	                        var type = _row[1];
-	                        var line = _row[2];
-	                        var text = _row[3];
-
-	                        if (space !== minSpace) {
-	                            var pattern = new RegExp("^\s{" + secondMinSpace + "}");
-	                            leftLines.push(line.replace(pattern, ''));
-	                        } else {
-	                            if (lastType !== type) {
-	                                if (lastType) {
-	                                    html += '</' + lastType + '>';
-	                                }
-
-	                                html += '<' + type + '>';
-	                            }
-
-	                            if (leftLines) {
-	                                html += "<li>" + this.parse(leftLines.join("\n")) + "</li>";
-	                            }
-
-	                            leftLines = [text];
-	                            lastType = type;
-	                        }
-	                    } else {
+	                    if (space !== minSpace) {
 	                        var pattern = new RegExp("^\s{" + secondMinSpace + "}");
-	                        leftLines.push(row.replace(pattern, ''));
+	                        leftLines.push(line.replace(pattern, ''));
+	                    } else {
+	                        if (lastType !== type) {
+	                            if (lastType) {
+	                                html += '</' + lastType + '>';
+	                            }
+
+	                            html += '<' + type + '>';
+	                        }
+
+	                        if (leftLines) {
+	                            html += "<li>" + _this2.parse(leftLines.join("\n")) + "</li>";
+	                        }
+
+	                        leftLines = [text];
+	                        lastType = type;
 	                    }
+	                } else {
+	                    var pattern = new RegExp("^\s{" + secondMinSpace + "}");
+	                    leftLines.push(row.replace(pattern, ''));
 	                }
-	            } catch (err) {
-	                _didIteratorError6 = true;
-	                _iteratorError6 = err;
-	            } finally {
-	                try {
-	                    if (!_iteratorNormalCompletion6 && _iterator6['return']) {
-	                        _iterator6['return']();
-	                    }
-	                } finally {
-	                    if (_didIteratorError6) {
-	                        throw _iteratorError6;
-	                    }
-	                }
-	            }
+	            });
 
 	            if (leftLines) {
 	                html += "<li>" + this.parse(leftLines.join("\n")) + ('</li></' + lastType + '>');
@@ -942,7 +907,7 @@
 	    }, {
 	        key: 'parseTable',
 	        value: function parseTable(lines, value) {
-	            var _this2 = this;
+	            var _this3 = this;
 
 	            var _value = _slicedToArray(value, 2);
 
@@ -954,120 +919,91 @@
 	            var html = '<table>';
 	            var body = null;
 
-	            // function* entries(obj) {
-	            //   for (let key of Object.keys(obj)) {
-	            //     yield [key, obj[key]];
-	            //   }
-	            // }
-	            var _iteratorNormalCompletion7 = true;
-	            var _didIteratorError7 = false;
-	            var _iteratorError7 = undefined;
-
-	            try {
-	                for (var _iterator7 = lines[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
-	                    var _step7$value = _slicedToArray(_step7.value, 2);
-
-	                    var _key4 = _step7$value[0];
-	                    var line = _step7$value[1];
-
-	                    if (_key4 === ignore) {
-	                        head = false;
-	                        body = true;
-	                        continue;
-	                    }
-
-	                    if (line[0] === '|') {
-	                        line = line.substr(1);
-	                        if (line[line.length - 1] === '|') {
-	                            line = line.substr(0, -1);
-	                        }
-	                    }
-
-	                    line = line.replace(/^(\|?)(.*?)\\1$/, "$2", line);
-	                    rows = line.split('|').map(function (item) {
-	                        return item.trim();
-	                    });
-	                    var columns = [];
-	                    var last = -1;
-
-	                    var _iteratorNormalCompletion8 = true;
-	                    var _didIteratorError8 = false;
-	                    var _iteratorError8 = undefined;
-
-	                    try {
-	                        for (var _iterator8 = rows[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
-	                            var row = _step8.value;
-
-	                            if (row.length > 0) {
-	                                last++;
-	                                columns[last] = [1, row];
-	                            } else if (columns[last]) {
-	                                columns[last][0]++;
-	                            }
-	                        }
-	                    } catch (err) {
-	                        _didIteratorError8 = true;
-	                        _iteratorError8 = err;
-	                    } finally {
-	                        try {
-	                            if (!_iteratorNormalCompletion8 && _iterator8['return']) {
-	                                _iterator8['return']();
-	                            }
-	                        } finally {
-	                            if (_didIteratorError8) {
-	                                throw _iteratorError8;
-	                            }
-	                        }
-	                    }
-
-	                    if (head) {
-	                        html += '<thead>';
-	                    } else if (body) {
-	                        html += '<tbody>';
-	                    }
-
-	                    html += '<tr>';
-
-	                    columns.forEach(function (column, key) {
-	                        var _column = _slicedToArray(column, 2);
-
-	                        var num = _column[0];
-	                        var text = _column[1];
-
-	                        var tag = head ? 'th' : 'td';
-
-	                        html += '<' + tag;
-	                        if (num > 1) {
-	                            html += ' colspan="' + num + '"';
-	                        }
-
-	                        if (aligns[key] && aligns[key] != 'none') {
-	                            html += ' align="' + aligns[key] + '"';
-	                        }
-
-	                        html += '>' + _this2.parseInline(text) + ('</' + tag + '>');
-	                    });
-
-	                    html += '</tr>';
-
-	                    if (head) {
-	                        html += '</thead>';
-	                    } else if (body) {
-	                        body = false;
+	            for (var key in lines) {
+	                var line = lines[key];
+	                if (key === ignore) {
+	                    head = false;
+	                    body = true;
+	                    continue;
+	                }
+	                if (line[0] === '|') {
+	                    line = line.substr(1);
+	                    if (line[line.length - 1] === '|') {
+	                        line = line.substr(0, -1);
 	                    }
 	                }
-	            } catch (err) {
-	                _didIteratorError7 = true;
-	                _iteratorError7 = err;
-	            } finally {
+
+	                line = line.replace(/^(\|?)(.*?)\1$/, "$2", line);
+	                var rows = line.split('|').map(function (item) {
+	                    return item.trim();
+	                });
+	                var columns = [];
+	                var last = -1;
+
+	                var _iteratorNormalCompletion5 = true;
+	                var _didIteratorError5 = false;
+	                var _iteratorError5 = undefined;
+
 	                try {
-	                    if (!_iteratorNormalCompletion7 && _iterator7['return']) {
-	                        _iterator7['return']();
+	                    for (var _iterator5 = rows[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+	                        var row = _step5.value;
+
+	                        if (row.length > 0) {
+	                            last++;
+	                            columns[last] = [1, row];
+	                        } else if (columns[last]) {
+	                            columns[last][0]++;
+	                        }
 	                    }
+	                } catch (err) {
+	                    _didIteratorError5 = true;
+	                    _iteratorError5 = err;
 	                } finally {
-	                    if (_didIteratorError7) {
-	                        throw _iteratorError7;
+	                    try {
+	                        if (!_iteratorNormalCompletion5 && _iterator5['return']) {
+	                            _iterator5['return']();
+	                        }
+	                    } finally {
+	                        if (_didIteratorError5) {
+	                            throw _iteratorError5;
+	                        }
 	                    }
+	                }
+
+	                if (head) {
+	                    html += '<thead>';
+	                } else if (body) {
+	                    html += '<tbody>';
+	                }
+
+	                html += '<tr>';
+
+	                columns.forEach(function (column, key) {
+	                    var _column = _slicedToArray(column, 2);
+
+	                    var num = _column[0];
+	                    var text = _column[1];
+
+	                    var tag = head ? 'th' : 'td';
+
+	                    html += '<' + tag;
+	                    if (num > 1) {
+	                        html += ' colspan="' + num + '"';
+	                    }
+
+	                    if (aligns[key] && aligns[key] != 'none') {
+	                        html += ' align="' + aligns[key] + '"';
+	                    }
+
+	                    html += '>' + _this3.parseInline(text) + ('</' + tag + '>');
+	                });
+
+	                html += '</tr>';
+
+	                if (head) {
+	                    html += '</thead>';
+	                } else if (body) {
+	                    body = false;
 	                }
 	            }
 
@@ -1099,30 +1035,11 @@
 	    }, {
 	        key: 'parseNormal',
 	        value: function parseNormal(lines) {
-	            var _iteratorNormalCompletion9 = true;
-	            var _didIteratorError9 = false;
-	            var _iteratorError9 = undefined;
+	            var _this4 = this;
 
-	            try {
-	                for (var _iterator9 = lines[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
-	                    var line = _step9.value;
-
-	                    line = this.parseInline(line);
-	                }
-	            } catch (err) {
-	                _didIteratorError9 = true;
-	                _iteratorError9 = err;
-	            } finally {
-	                try {
-	                    if (!_iteratorNormalCompletion9 && _iterator9['return']) {
-	                        _iterator9['return']();
-	                    }
-	                } finally {
-	                    if (_didIteratorError9) {
-	                        throw _iteratorError9;
-	                    }
-	                }
-	            }
+	            lines.forEach(function (line, key) {
+	                lines[key] = _this4.parseInline(line);
+	            });
 
 	            var str = lines.join("\n");
 	            str = str.replace(/(\n\s*){2,}/, "</p><p>");
@@ -1180,27 +1097,27 @@
 	    }, {
 	        key: 'parseHtml',
 	        value: function parseHtml(lines, type) {
-	            var _iteratorNormalCompletion10 = true;
-	            var _didIteratorError10 = false;
-	            var _iteratorError10 = undefined;
+	            var _iteratorNormalCompletion6 = true;
+	            var _didIteratorError6 = false;
+	            var _iteratorError6 = undefined;
 
 	            try {
-	                for (var _iterator10 = lines[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
-	                    var line = _step10.value;
+	                for (var _iterator6 = lines[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+	                    var line = _step6.value;
 
 	                    line = this.parseInline(line, this.specialWhiteList[type] ? this.specialWhiteList[type] : '');
 	                }
 	            } catch (err) {
-	                _didIteratorError10 = true;
-	                _iteratorError10 = err;
+	                _didIteratorError6 = true;
+	                _iteratorError6 = err;
 	            } finally {
 	                try {
-	                    if (!_iteratorNormalCompletion10 && _iterator10['return']) {
-	                        _iterator10['return']();
+	                    if (!_iteratorNormalCompletion6 && _iterator6['return']) {
+	                        _iterator6['return']();
 	                    }
 	                } finally {
-	                    if (_didIteratorError10) {
-	                        throw _iteratorError10;
+	                    if (_didIteratorError6) {
+	                        throw _iteratorError6;
 	                    }
 	                }
 	            }

@@ -50,7 +50,7 @@ export default class Parser {
      * @return string
      */
     makeHolder (str) {
-        key = '|' + this.uniqid + this.id + '|'
+        let key = '|' + this.uniqid + this.id + '|'
         this.id++
         this.holders[key] = str
         return key
@@ -61,8 +61,12 @@ export default class Parser {
      * @return mixed
      */
     initText (text) {
-        text = text.replace('\t', '    ')
-        text = text.replace('\r', '')
+        if(text) {
+            text = text.replace('\t', '    ')
+            text = text.replace('\r', '')
+        } else {
+            text = ''
+        }
         return text;
     }
 
@@ -101,15 +105,14 @@ export default class Parser {
     parse (text) {
         let lines = text.split("\n")
         let blocks = this.parseBlock(text, lines)
-        console.log(blocks)
         let html = ''
 
         blocks.forEach (block => {
             let [type, start, end, value] = block
-            let extract = lines.slice(start, end - start + 1)
+            let extract = lines.slice(start, end + 1)
             let method = 'parse' + type.slice(0,1).toUpperCase() + type.slice(1)
-
-            extract = this.call('before' + method.slice(0,1).toUpperCase() + method.slice(1), extract, value)
+            let beforeMethod = 'beforeParse' + type.slice(0,1).toUpperCase() + type.slice(1)
+            extract = this.call(beforeMethod, extract, value)
             let result = this[method](extract, value)
             result = this.call('after' + method.slice(0,1).toUpperCase() + method.slice(1), result, value)
 
@@ -196,14 +199,15 @@ export default class Parser {
         }
 
         // image
-        let imagePattern1 = new RegExp("![((?:[^]]|\]|\[)*?)](([^)]+))")
+        let imagePattern1 = new RegExp("/!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/")
         let imageMatches1 = imagePattern1.exec(text)
         if (imageMatches1) {
             let escaped = this.escapeBracket(imageMatches1[1])
-            text = this.makeHolder(`<img src="${imageMatches1[2]}" alt="${escaped}" title="${escaped}">`)
+            let url = this.escapeBracket(imageMatches1[2])
+            text = this.makeHolder(`<img src="${url}" alt="${escaped}" title="${escaped}">`)
         }
 
-        let imagePattern2 = new RegExp("![((?:[^]]|\]|\[)*?)][((?:[^]]|\]|\[)+)]")
+        let imagePattern2 = new RegExp("!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]")
         let imageMatches2 = imagePattern2.exec(text)
         if(imageMatches2) {
             let escaped = this.escapeBracket(imageMatches2[1])
@@ -217,14 +221,15 @@ export default class Parser {
         }
 
         // link
-        let linkPattern1 = new RegExp("[((?:[^]]|\]|\[)+?)](([^)]+))")
+        let linkPattern1 = new RegExp("\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)")
         let linkMatches1 = linkPattern1.exec(text)
         if(linkMatches1) {
             let escaped = this.escapeBracket(linkMatches1[1])
-            text = this.makeHolder(`<a href="${linkMatches1[2]}">${escaped}</a>`)
+            let url = this.escapeBracket(linkMatches1[2])
+            text = this.makeHolder(`<a href="${url}">${escaped}</a>`)
         }
 
-        let linkPattern2 = new RegExp("[((?:[^]]|\]|\[)+?)][((?:[^]]|\]|\[)+)]")
+        let linkPattern2 = new RegExp("\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]")
         let linkMatches2 = linkPattern2.exec(text)
         if(linkMatches2) {
             let escaped = this.escapeBracket(linkMatches2[1])
@@ -243,20 +248,20 @@ export default class Parser {
         }
 
         // strong and em and some fuck
-        text = text.replace(/(\s|^)(_|\*){3}(.+?)\1{3}(\s|$)/, "$1<strong><em>$3</em></strong>$4")
-        text = text.replace(/(\s|^)(_|\*){2}(.+?)\1{2}(\s|$)/, "$1<strong>$3</strong>$4")
-        text = text.replace(/(\s|^)(_|\*)(.+?)\1(\s|$)/, "$1<em>$3</em>$4")
+        text = text.replace(/(_|\*){2}(.+?)\1{2}/, "<strong><em>$2</em></strong>")
+        text = text.replace(/(_|\*){1}(.+?)\1{1}/, "<strong>$2</strong>")
+        text = text.replace(/(_|\*)(.+?)\1/, "<em>$2</em>")
         text = text.replace(/<(https?:\/\/.+)>/i, "<a href=\"$1\">$1</a>")
+        text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i, "<a href=\"mailto:$1\">$1</a>")
 
         // autolink
-        text = text.replace(/(^|[^\"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,]+)($|[^\"])/i,
+        text = text.replace(/(^|[^"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,]+)($|[^"])/i,
             "$1<a href=\"$2\">$2</a>$4")
 
         text = this.call('afterParseInlineBeforeRelease', text);
 
         // release
         text = this.releaseHolder(text)
-
         text = this.call('afterParseInline', text)
 
         return text
@@ -269,8 +274,7 @@ export default class Parser {
      * @param array lines
      * @return array
      */
-    parseBlock (text) {
-        let lines = text.split("\n")
+    parseBlock (text, lines) {
         this.blocks = []
         this.current = 'normal'
         this.pos = -1
@@ -280,7 +284,7 @@ export default class Parser {
         for (let key in lines) {
             let line = lines[key]
             // code block is special
-            if (matches = line.match("/^(~|`){3,}([^`~]*)$/i")) {
+            if (matches = line.match(/^(~|`){3,}([^`~]*)$/i)) {
                 if (this.isBlock('code')) {
                     this.setBlock(key)
                         .endBlock()
@@ -294,14 +298,16 @@ export default class Parser {
             }
 
             // html block is special too
-            if (matches = line.match(/^\s*<({$special})(\s+[^>]*)?>/i)) {
+            let htmlPattern1 = new RegExp('^\s*<(' + special + ')(\s+[^>]*)?>', 'i')
+            let htmlPattern2 = new RegExp('<\/(' + special+ ')>\s*$', 'i')
+            if (matches = line.match(htmlPattern1)) {
                 tag = matches[1].toLowerCase()
                 if (!this.isBlock('html', tag) && !this.isBlock('pre')) {
                     this.startBlock('html', key, tag)
                 }
 
                 continue
-            } else if (matches = line.match(/<\/({$special})>\s*$/i)) {
+            } else if (matches = line.match(htmlPattern2)) {
                 tag = matches[1].toLowerCase()
 
                 if (this.isBlock('html', tag)) {
@@ -362,7 +368,7 @@ export default class Parser {
                         let block = this.getBlock()
                         let head = false
 
-                        if (block.length === 0 || block[0] !== 'normal' || /^\s*$/.exec(lines[block[2]])) {
+                        if (block.length === 0 || block[0] !== 'normal' || /^\s*$/.test(lines[block[2]])) {
                             this.startBlock('table', key)
                         } else {
                             head = true
@@ -373,7 +379,7 @@ export default class Parser {
                             tableMatches[1] = tableMatches[1].substr(1)
 
                             if (tableMatches[1][tableMatches[1].length - 1] == '|') {
-                                tableMatches[1] = tableMatches[1].substr(0, -1)
+                                tableMatches[1] = tableMatches[1].slice(0, -1)
                             }
                         }
 
@@ -383,11 +389,11 @@ export default class Parser {
                             let align = 'none'
 
                             if (tableMatches = row.match(/^\s*(:?)\-+(:?)\s*$/)) {
-                                if (!tableMatches[1] && !tableMatches[2]) {
+                                if (tableMatches[1] && tableMatches[2]) {
                                     align = 'center'
-                                } else if (!tableMatches[1]) {
+                                } else if (tableMatches[1]) {
                                     align = 'left'
-                                } else if (!tableMatches[2]) {
+                                } else if (tableMatches[2]) {
                                     align = 'right'
                                 }
                             }
@@ -408,8 +414,7 @@ export default class Parser {
                     break
 
                 // multi heading
-                case /^\s*((=|-){2,})\s*$/.test(line)
-                    && (this.getBlock() && !/^\s*$/.test(lines[this.getBlock()[2]])):    // check if last line isn't empty
+                case /^\s*((=|-){2,})\s*$/.test(line) && (this.getBlock() && !/^\s*$/.test(lines[this.getBlock()[2]])):    // check if last line isn't empty
                     let multiHeadingMatches = line.match(/^\s*((=|-){2,})\s*$/)
                     if (this.isBlock('normal')) {
                         this.backBlock(1, 'mh', multiHeadingMatches[1][0] == '=' ? 1 : 2)
@@ -510,7 +515,7 @@ export default class Parser {
 
             if ('pre' === type) {
                 let isEmpty = lines.reduce(function (result, line) {
-                    return line.match("/^\s*$/") && result;
+                    return line.match(/^\s*$/) && result;
                 }, true);
 
                 if (isEmpty) {
@@ -604,9 +609,9 @@ export default class Parser {
      * @return string
      */
     parseQuote(lines) {
-        for (let line of lines) {
-            line = line.replace(/^> ?/, '')
-        }
+        lines.forEach( (line, key) => {
+            lines[key] = line.replace(/^> ?/, '')
+        })
         let str = lines.join('\n')
         return /^\s*$/.test(str) ? '' : '<blockquote>' + this.parse(str) + '</blockquote>'
     }
@@ -640,7 +645,7 @@ export default class Parser {
         let secondMinSpace = 99999
         for (let row of rows) {
             if (Array.isArray(row) && row[0] != minSpace) {
-                secondMinSpace = min(secondMinSpace, row[0])
+                secondMinSpace = Math.min(secondMinSpace, row[0])
                 found = true
             }
         }
@@ -649,7 +654,7 @@ export default class Parser {
         let lastType = ''
         let leftLines = []
 
-        for (let row of rows) {
+        rows.forEach(row => {
             if (Array.isArray(row)) {
                 let [space, type, line, text] = row
 
@@ -676,7 +681,7 @@ export default class Parser {
                 let pattern = new RegExp("^\s{" + secondMinSpace + "}")
                 leftLines.push(row.replace(pattern, ''))
             }
-        }
+        })
 
         if (leftLines) {
             html += "<li>" + this.parse(leftLines.join("\n")) + `</li></${lastType}>`
@@ -697,18 +702,13 @@ export default class Parser {
         let html = '<table>'
         let body = null
 
-        // function* entries(obj) {
-        //   for (let key of Object.keys(obj)) {
-        //     yield [key, obj[key]];
-        //   }
-        // }
-        for (let [key, line] of lines) {
+        for (let key in lines) {
+            let line = lines[key]
             if (key === ignore) {
                 head = false
                 body = true
                 continue
             }
-
             if (line[0] === '|') {
                 line = line.substr( 1)
                 if (line[line.length - 1] === '|') {
@@ -716,8 +716,8 @@ export default class Parser {
                 }
             }
 
-            line = line.replace(/^(\|?)(.*?)\\1$/, "$2", line)
-            rows = line.split('|').map(function(item){return item.trim()})
+            line = line.replace(/^(\|?)(.*?)\1$/, "$2", line)
+            let rows = line.split('|').map(function(item){return item.trim()})
             let columns = []
             let last = -1
 
@@ -787,9 +787,9 @@ export default class Parser {
      * @return string
      */
     parseNormal(lines) {
-        for (let line of lines) {
-            line = this.parseInline(line)
-        }
+        lines.forEach((line, key) => {
+            lines[key] = this.parseInline(line)
+        })
 
         let str = lines.join("\n")
         str = str.replace(/(\n\s*){2,}/, "</p><p>")
