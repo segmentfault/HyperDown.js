@@ -147,7 +147,8 @@ export default class Parser {
      * @return string
      */
     releaseHolder(text) {
-        for (let [key, value] of this.holders.entries()) {
+        for (let key in this.holders) {
+            let value = this.holders[key]
             text = text.replace(key, value)
         }
         this.holders.clear()
@@ -185,7 +186,7 @@ export default class Parser {
         text = text.replace('<', '&lt;')
         text = text.replace('>', '&gt;')
 
-        let footnotePattern = new RegExp("[^((?:[^]]|\]|\[)+?)]")
+        let footnotePattern = /\[\^((?:[^\]]|\]|\[)+?)\]/
         let footnoteMatches = footnotePattern.exec(text)
         if(footnoteMatches) {
             let id = this.footnotes.indexOf(footnoteMatches[1])
@@ -199,7 +200,7 @@ export default class Parser {
         }
 
         // image
-        let imagePattern1 = new RegExp("/!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/")
+        let imagePattern1 = /!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/
         let imageMatches1 = imagePattern1.exec(text)
         if (imageMatches1) {
             let escaped = this.escapeBracket(imageMatches1[1])
@@ -207,7 +208,7 @@ export default class Parser {
             text = this.makeHolder(`<img src="${url}" alt="${escaped}" title="${escaped}">`)
         }
 
-        let imagePattern2 = new RegExp("!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]")
+        let imagePattern2 = /!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]/
         let imageMatches2 = imagePattern2.exec(text)
         if(imageMatches2) {
             let escaped = this.escapeBracket(imageMatches2[1])
@@ -221,15 +222,16 @@ export default class Parser {
         }
 
         // link
-        let linkPattern1 = new RegExp("\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)")
+        let linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/
         let linkMatches1 = linkPattern1.exec(text)
+
         if(linkMatches1) {
             let escaped = this.escapeBracket(linkMatches1[1])
             let url = this.escapeBracket(linkMatches1[2])
             text = this.makeHolder(`<a href="${url}">${escaped}</a>`)
         }
 
-        let linkPattern2 = new RegExp("\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]")
+        let linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/
         let linkMatches2 = linkPattern2.exec(text)
         if(linkMatches2) {
             let escaped = this.escapeBracket(linkMatches2[1])
@@ -248,13 +250,13 @@ export default class Parser {
         }
 
         // strong and em and some fuck
-        text = text.replace(/(_|\*){2}(.+?)\1{2}/, "<strong><em>$2</em></strong>")
-        text = text.replace(/(_|\*){1}(.+?)\1{1}/, "<strong>$2</strong>")
+        text = text.replace(/(_|\*){3}(.+?)\1{3}/, "<strong><em>$2</em></strong>")
+        text = text.replace(/(_|\*){2}(.+?)\1{2}/, "<strong>$2</strong>")
         text = text.replace(/(_|\*)(.+?)\1/, "<em>$2</em>")
         text = text.replace(/<(https?:\/\/.+)>/i, "<a href=\"$1\">$1</a>")
         text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i, "<a href=\"mailto:$1\">$1</a>")
 
-        // autolink
+        // autolink url
         text = text.replace(/(^|[^"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,]+)($|[^"])/i,
             "$1<a href=\"$2\">$2</a>$4")
 
@@ -286,10 +288,25 @@ export default class Parser {
             // code block is special
             if (matches = line.match(/^(~|`){3,}([^`~]*)$/i)) {
                 if (this.isBlock('code')) {
-                    this.setBlock(key)
-                        .endBlock()
+                    let block = this.getBlock()
+                    let isAfterList = block[3][2]
+
+                    if (isAfterList) {
+                        this.combineBlock()
+                            .setBlock(key);
+                    } else {
+                        this.setBlock(key)
+                            .endBlock()
+                    }
                 } else {
-                    this.startBlock('code', key, matches[2])
+                    isAfterList = false
+                    if (this.isBlock('list')) {
+                        let block = this.getBlock()
+                        let space = block[3]
+                        let isAfterList = (space > 0 && matches[1].length >= space)
+                            || matches[1].length > space
+                    }
+                    this.startBlock('code', key, [matches[1], matches[3], isAfterList])
                 }
                 continue
             } else if (this.isBlock('code')) {
@@ -632,7 +649,7 @@ export default class Parser {
             let matches = line.match(/^(\s*)((?:[0-9a-z]\.?)|\-|\+|\*)(\s+)(.*)$/)
             if (matches) {
                 let space = matches[1].length
-                let type = (-1 !== matches[2].indexOf('+-*')) ? 'ul' : 'ol'
+                let type = /[\+\-\*]/.test(matches[2]) ? 'ul' : 'ol'
                 minSpace = Math.min(space, minSpace)
 
                 rows.push([space, type, line, matches[4]])
@@ -649,12 +666,12 @@ export default class Parser {
                 found = true
             }
         }
-        secondMinSpace = found || minSpace
+        secondMinSpace = found ? 0 : minSpace
 
         let lastType = ''
         let leftLines = []
 
-        rows.forEach(row => {
+        for (let row of rows) {
             if (Array.isArray(row)) {
                 let [space, type, line, text] = row
 
@@ -663,14 +680,14 @@ export default class Parser {
                     leftLines.push(line.replace(pattern, ''))
                 } else {
                     if (lastType !== type) {
-                        if (lastType) {
+                        if (lastType.length) {
                             html += `</${lastType}>`
                         }
 
                         html += `<${type}>`
                     }
 
-                    if (leftLines) {
+                    if (leftLines.length) {
                         html += "<li>" + this.parse(leftLines.join("\n")) + "</li>"
                     }
 
@@ -681,9 +698,9 @@ export default class Parser {
                 let pattern = new RegExp("^\s{" + secondMinSpace + "}")
                 leftLines.push(row.replace(pattern, ''))
             }
-        })
+        }
 
-        if (leftLines) {
+        if (leftLines.length) {
             html += "<li>" + this.parse(leftLines.join("\n")) + `</li></${lastType}>`
         }
 
@@ -849,11 +866,13 @@ export default class Parser {
      * @return mixed
      */
     escapeBracket(str) {
-        str = str.replace('\[', '[')
-        str = str.replace('\]', ']')
-        str = str.replace('\(', '(')
-        str = str.replace('\)', ')')
-        return str
+        if (str) {
+            str = str.replace('\[', '[')
+            str = str.replace('\]', ']')
+            str = str.replace('\(', '(')
+            str = str.replace('\)', ')')
+            return str
+        }
     }
 
     /**
@@ -964,5 +983,25 @@ export default class Parser {
         }
 
         return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    /**
+     * @return this
+     */
+    combineBlock () {
+        if (this.pos < 1) {
+            return this
+        }
+
+        let prev = this.blocks[this.pos - 1]
+        let current = this.blocks[this.pos]
+
+        prev[2] = current[2]
+        this.blocks[this.pos - 1] = prev
+        this.current = prev[0]
+        unset(this.blocks[this.pos])
+        this.pos--
+
+        return this
     }
 }

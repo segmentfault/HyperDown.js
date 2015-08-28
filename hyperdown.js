@@ -240,34 +240,10 @@
 	    }, {
 	        key: 'releaseHolder',
 	        value: function releaseHolder(text) {
-	            var _iteratorNormalCompletion = true;
-	            var _didIteratorError = false;
-	            var _iteratorError = undefined;
-
-	            try {
-	                for (var _iterator = this.holders.entries()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-	                    var _step$value = _slicedToArray(_step.value, 2);
-
-	                    var key = _step$value[0];
-	                    var value = _step$value[1];
-
-	                    text = text.replace(key, value);
-	                }
-	            } catch (err) {
-	                _didIteratorError = true;
-	                _iteratorError = err;
-	            } finally {
-	                try {
-	                    if (!_iteratorNormalCompletion && _iterator['return']) {
-	                        _iterator['return']();
-	                    }
-	                } finally {
-	                    if (_didIteratorError) {
-	                        throw _iteratorError;
-	                    }
-	                }
+	            for (var key in this.holders) {
+	                var value = this.holders[key];
+	                text = text.replace(key, value);
 	            }
-
 	            this.holders.clear();
 
 	            return text;
@@ -307,7 +283,7 @@
 	            text = text.replace('<', '&lt;');
 	            text = text.replace('>', '&gt;');
 
-	            var footnotePattern = new RegExp("[^((?:[^]]|\]|\[)+?)]");
+	            var footnotePattern = /\[\^((?:[^\]]|\]|\[)+?)\]/;
 	            var footnoteMatches = footnotePattern.exec(text);
 	            if (footnoteMatches) {
 	                var id = this.footnotes.indexOf(footnoteMatches[1]);
@@ -321,7 +297,7 @@
 	            }
 
 	            // image
-	            var imagePattern1 = new RegExp("/!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/");
+	            var imagePattern1 = /!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/;
 	            var imageMatches1 = imagePattern1.exec(text);
 	            if (imageMatches1) {
 	                var escaped = this.escapeBracket(imageMatches1[1]);
@@ -329,7 +305,7 @@
 	                text = this.makeHolder('<img src="' + url + '" alt="' + escaped + '" title="' + escaped + '">');
 	            }
 
-	            var imagePattern2 = new RegExp("!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]");
+	            var imagePattern2 = /!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]/;
 	            var imageMatches2 = imagePattern2.exec(text);
 	            if (imageMatches2) {
 	                var escaped = this.escapeBracket(imageMatches2[1]);
@@ -343,15 +319,16 @@
 	            }
 
 	            // link
-	            var linkPattern1 = new RegExp("\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)");
+	            var linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/;
 	            var linkMatches1 = linkPattern1.exec(text);
+
 	            if (linkMatches1) {
 	                var escaped = this.escapeBracket(linkMatches1[1]);
 	                var url = this.escapeBracket(linkMatches1[2]);
 	                text = this.makeHolder('<a href="' + url + '">' + escaped + '</a>');
 	            }
 
-	            var linkPattern2 = new RegExp("\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]");
+	            var linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/;
 	            var linkMatches2 = linkPattern2.exec(text);
 	            if (linkMatches2) {
 	                var escaped = this.escapeBracket(linkMatches2[1]);
@@ -368,13 +345,13 @@
 	            }
 
 	            // strong and em and some fuck
-	            text = text.replace(/(_|\*){2}(.+?)\1{2}/, "<strong><em>$2</em></strong>");
-	            text = text.replace(/(_|\*){1}(.+?)\1{1}/, "<strong>$2</strong>");
+	            text = text.replace(/(_|\*){3}(.+?)\1{3}/, "<strong><em>$2</em></strong>");
+	            text = text.replace(/(_|\*){2}(.+?)\1{2}/, "<strong>$2</strong>");
 	            text = text.replace(/(_|\*)(.+?)\1/, "<em>$2</em>");
 	            text = text.replace(/<(https?:\/\/.+)>/i, "<a href=\"$1\">$1</a>");
 	            text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i, "<a href=\"mailto:$1\">$1</a>");
 
-	            // autolink
+	            // autolink url
 	            text = text.replace(/(^|[^"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,]+)($|[^"])/i, "$1<a href=\"$2\">$2</a>$4");
 
 	            text = this.call('afterParseInlineBeforeRelease', text);
@@ -407,9 +384,22 @@
 	                // code block is special
 	                if (matches = line.match(/^(~|`){3,}([^`~]*)$/i)) {
 	                    if (this.isBlock('code')) {
-	                        this.setBlock(key).endBlock();
+	                        var block = this.getBlock();
+	                        var _isAfterList = block[3][2];
+
+	                        if (_isAfterList) {
+	                            this.combineBlock().setBlock(key);
+	                        } else {
+	                            this.setBlock(key).endBlock();
+	                        }
 	                    } else {
-	                        this.startBlock('code', key, matches[2]);
+	                        isAfterList = false;
+	                        if (this.isBlock('list')) {
+	                            var block = this.getBlock();
+	                            var space = block[3];
+	                            var _isAfterList2 = space > 0 && matches[1].length >= space || matches[1].length > space;
+	                        }
+	                        this.startBlock('code', key, [matches[1], matches[3], isAfterList]);
 	                    }
 	                    continue;
 	                } else if (this.isBlock('code')) {
@@ -503,13 +493,13 @@
 
 	                            var rows = tableMatches[1].split(/(\+|\|)/);
 	                            var aligns = [];
-	                            var _iteratorNormalCompletion2 = true;
-	                            var _didIteratorError2 = false;
-	                            var _iteratorError2 = undefined;
+	                            var _iteratorNormalCompletion = true;
+	                            var _didIteratorError = false;
+	                            var _iteratorError = undefined;
 
 	                            try {
-	                                for (var _iterator2 = rows[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-	                                    var row = _step2.value;
+	                                for (var _iterator = rows[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	                                    var row = _step.value;
 
 	                                    var align = 'none';
 
@@ -526,16 +516,16 @@
 	                                    aligns.push(align);
 	                                }
 	                            } catch (err) {
-	                                _didIteratorError2 = true;
-	                                _iteratorError2 = err;
+	                                _didIteratorError = true;
+	                                _iteratorError = err;
 	                            } finally {
 	                                try {
-	                                    if (!_iteratorNormalCompletion2 && _iterator2['return']) {
-	                                        _iterator2['return']();
+	                                    if (!_iteratorNormalCompletion && _iterator['return']) {
+	                                        _iterator['return']();
 	                                    }
 	                                } finally {
-	                                    if (_didIteratorError2) {
-	                                        throw _iteratorError2;
+	                                    if (_didIteratorError) {
+	                                        throw _iteratorError;
 	                                    }
 	                                }
 	                            }
@@ -708,27 +698,27 @@
 	    }, {
 	        key: 'parsePre',
 	        value: function parsePre(lines) {
-	            var _iteratorNormalCompletion3 = true;
-	            var _didIteratorError3 = false;
-	            var _iteratorError3 = undefined;
+	            var _iteratorNormalCompletion2 = true;
+	            var _didIteratorError2 = false;
+	            var _iteratorError2 = undefined;
 
 	            try {
-	                for (var _iterator3 = lines[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-	                    var line = _step3.value;
+	                for (var _iterator2 = lines[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	                    var line = _step2.value;
 
 	                    line = this.htmlspecialchars(line.substr(4));
 	                }
 	            } catch (err) {
-	                _didIteratorError3 = true;
-	                _iteratorError3 = err;
+	                _didIteratorError2 = true;
+	                _iteratorError2 = err;
 	            } finally {
 	                try {
-	                    if (!_iteratorNormalCompletion3 && _iterator3['return']) {
-	                        _iterator3['return']();
+	                    if (!_iteratorNormalCompletion2 && _iterator2['return']) {
+	                        _iterator2['return']();
 	                    }
 	                } finally {
-	                    if (_didIteratorError3) {
-	                        throw _iteratorError3;
+	                    if (_didIteratorError2) {
+	                        throw _iteratorError2;
 	                    }
 	                }
 	            }
@@ -803,8 +793,6 @@
 	    }, {
 	        key: 'parseList',
 	        value: function parseList(lines) {
-	            var _this2 = this;
-
 	            var html = '';
 	            var minSpace = 99999;
 	            var rows = [];
@@ -814,7 +802,7 @@
 	                var matches = line.match(/^(\s*)((?:[0-9a-z]\.?)|\-|\+|\*)(\s+)(.*)$/);
 	                if (matches) {
 	                    var space = matches[1].length;
-	                    var type = -1 !== matches[2].indexOf('+-*') ? 'ul' : 'ol';
+	                    var type = /[\+\-\*]/.test(matches[2]) ? 'ul' : 'ol';
 	                    minSpace = Math.min(space, minSpace);
 
 	                    rows.push([space, type, line, matches[4]]);
@@ -825,6 +813,39 @@
 
 	            var found = false;
 	            var secondMinSpace = 99999;
+	            var _iteratorNormalCompletion3 = true;
+	            var _didIteratorError3 = false;
+	            var _iteratorError3 = undefined;
+
+	            try {
+	                for (var _iterator3 = rows[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+	                    var row = _step3.value;
+
+	                    if (Array.isArray(row) && row[0] != minSpace) {
+	                        secondMinSpace = Math.min(secondMinSpace, row[0]);
+	                        found = true;
+	                    }
+	                }
+	            } catch (err) {
+	                _didIteratorError3 = true;
+	                _iteratorError3 = err;
+	            } finally {
+	                try {
+	                    if (!_iteratorNormalCompletion3 && _iterator3['return']) {
+	                        _iterator3['return']();
+	                    }
+	                } finally {
+	                    if (_didIteratorError3) {
+	                        throw _iteratorError3;
+	                    }
+	                }
+	            }
+
+	            secondMinSpace = found ? 0 : minSpace;
+
+	            var lastType = '';
+	            var leftLines = [];
+
 	            var _iteratorNormalCompletion4 = true;
 	            var _didIteratorError4 = false;
 	            var _iteratorError4 = undefined;
@@ -833,9 +854,36 @@
 	                for (var _iterator4 = rows[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
 	                    var row = _step4.value;
 
-	                    if (Array.isArray(row) && row[0] != minSpace) {
-	                        secondMinSpace = Math.min(secondMinSpace, row[0]);
-	                        found = true;
+	                    if (Array.isArray(row)) {
+	                        var _row = _slicedToArray(row, 4);
+
+	                        var space = _row[0];
+	                        var type = _row[1];
+	                        var line = _row[2];
+	                        var text = _row[3];
+
+	                        if (space !== minSpace) {
+	                            var pattern = new RegExp("^\s{" + secondMinSpace + "}");
+	                            leftLines.push(line.replace(pattern, ''));
+	                        } else {
+	                            if (lastType !== type) {
+	                                if (lastType.length) {
+	                                    html += '</' + lastType + '>';
+	                                }
+
+	                                html += '<' + type + '>';
+	                            }
+
+	                            if (leftLines.length) {
+	                                html += "<li>" + this.parse(leftLines.join("\n")) + "</li>";
+	                            }
+
+	                            leftLines = [text];
+	                            lastType = type;
+	                        }
+	                    } else {
+	                        var pattern = new RegExp("^\s{" + secondMinSpace + "}");
+	                        leftLines.push(row.replace(pattern, ''));
 	                    }
 	                }
 	            } catch (err) {
@@ -853,46 +901,7 @@
 	                }
 	            }
 
-	            secondMinSpace = found || minSpace;
-
-	            var lastType = '';
-	            var leftLines = [];
-
-	            rows.forEach(function (row) {
-	                if (Array.isArray(row)) {
-	                    var _row = _slicedToArray(row, 4);
-
-	                    var space = _row[0];
-	                    var type = _row[1];
-	                    var line = _row[2];
-	                    var text = _row[3];
-
-	                    if (space !== minSpace) {
-	                        var pattern = new RegExp("^\s{" + secondMinSpace + "}");
-	                        leftLines.push(line.replace(pattern, ''));
-	                    } else {
-	                        if (lastType !== type) {
-	                            if (lastType) {
-	                                html += '</' + lastType + '>';
-	                            }
-
-	                            html += '<' + type + '>';
-	                        }
-
-	                        if (leftLines) {
-	                            html += "<li>" + _this2.parse(leftLines.join("\n")) + "</li>";
-	                        }
-
-	                        leftLines = [text];
-	                        lastType = type;
-	                    }
-	                } else {
-	                    var pattern = new RegExp("^\s{" + secondMinSpace + "}");
-	                    leftLines.push(row.replace(pattern, ''));
-	                }
-	            });
-
-	            if (leftLines) {
+	            if (leftLines.length) {
 	                html += "<li>" + this.parse(leftLines.join("\n")) + ('</li></' + lastType + '>');
 	            }
 
@@ -907,7 +916,7 @@
 	    }, {
 	        key: 'parseTable',
 	        value: function parseTable(lines, value) {
-	            var _this3 = this;
+	            var _this2 = this;
 
 	            var _value = _slicedToArray(value, 2);
 
@@ -995,7 +1004,7 @@
 	                        html += ' align="' + aligns[key] + '"';
 	                    }
 
-	                    html += '>' + _this3.parseInline(text) + ('</' + tag + '>');
+	                    html += '>' + _this2.parseInline(text) + ('</' + tag + '>');
 	                });
 
 	                html += '</tr>';
@@ -1035,10 +1044,10 @@
 	    }, {
 	        key: 'parseNormal',
 	        value: function parseNormal(lines) {
-	            var _this4 = this;
+	            var _this3 = this;
 
 	            lines.forEach(function (line, key) {
-	                lines[key] = _this4.parseInline(line);
+	                lines[key] = _this3.parseInline(line);
 	            });
 
 	            var str = lines.join("\n");
@@ -1132,11 +1141,13 @@
 	    }, {
 	        key: 'escapeBracket',
 	        value: function escapeBracket(str) {
-	            str = str.replace('\[', '[');
-	            str = str.replace('\]', ']');
-	            str = str.replace('\(', '(');
-	            str = str.replace('\)', ')');
-	            return str;
+	            if (str) {
+	                str = str.replace('\[', '[');
+	                str = str.replace('\]', ']');
+	                str = str.replace('\(', '(');
+	                str = str.replace('\)', ')');
+	                return str;
+	            }
 	        }
 
 	        /**
@@ -1271,6 +1282,28 @@
 	            return text.replace(/[&<>"']/g, function (m) {
 	                return map[m];
 	            });
+	        }
+
+	        /**
+	         * @return this
+	         */
+	    }, {
+	        key: 'combineBlock',
+	        value: function combineBlock() {
+	            if (this.pos < 1) {
+	                return this;
+	            }
+
+	            var prev = this.blocks[this.pos - 1];
+	            var current = this.blocks[this.pos];
+
+	            prev[2] = current[2];
+	            this.blocks[this.pos - 1] = prev;
+	            this.current = prev[0];
+	            unset(this.blocks[this.pos]);
+	            this.pos--;
+
+	            return this;
 	        }
 	    }]);
 
