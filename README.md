@@ -7,7 +7,7 @@ HyperDown.js
 
 ##开发者使用方法##
 ###nodejs 中使用##
-[dist/Parser.js](src/Parser.js) (用 babel 编译成 ES5 的版本)
+[dist/Parser.js](dist/Parser.js) (用 babel 编译成 ES5 的版本)
 用 babel 编译：
 ```
 $ babel src/Parser.js -o dist/Parser.js
