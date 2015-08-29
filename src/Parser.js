@@ -286,7 +286,7 @@ export default class Parser {
         for (let key in lines) {
             let line = lines[key]
             // code block is special
-            if (matches = line.match(/^(~|`){3,}([^`~]*)$/i)) {
+            if (matches = line.match(/^(\s*)(~|`){3,}([^`~]*)$/i)) {
                 if (this.isBlock('code')) {
                     let block = this.getBlock()
                     let isAfterList = block[3][2]
@@ -299,11 +299,11 @@ export default class Parser {
                             .endBlock()
                     }
                 } else {
-                    isAfterList = false
+                    let isAfterList = false
                     if (this.isBlock('list')) {
                         let block = this.getBlock()
                         let space = block[3]
-                        let isAfterList = (space > 0 && matches[1].length >= space)
+                        isAfterList = (space > 0 && matches[1].length >= space)
                             || matches[1].length > space
                     }
                     this.startBlock('code', key, [matches[1], matches[3], isAfterList])
@@ -563,13 +563,24 @@ export default class Parser {
      * @param string lang
      * @return string
      */
-    parseCode(lines, lang) {
+    parseCode(lines, parts) {
+        let [blank, lang] = parts
         lang = lang.trim()
-        lines = lines.slice(1, -1)
+        let count = blank.length
+
+        if (!/^[_a-z0-9-\+\#]+$/i.test(lang)) {
+            lang = null
+        }
+
+        lines = lines.slice(1, -1).map(line => {
+            let pattern = new RegExp('/^[ ]{' + count + '}/')
+            return line.replace(pattern, '')
+        })
         let str = lines.join('\n')
 
-        return /^\s*$/.test(str) ? '' : '<pre><code' + (lang ? ` class="${lang}"` : '') + '>'
-            + this.htmlspecialchars(lines.join("\n")) + '</code></pre>'
+        return /^\s*$/.test(str) ? '' :
+            '<pre><code' + (lang ? ` class="${lang}"` : '') + '>'
+            + this.htmlspecialchars(lines.join('\n')) + '</code></pre>'
     }
 
     /**
@@ -982,7 +993,7 @@ export default class Parser {
             "'": '&#039;'
         }
 
-        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        return text.replace(/[&<>"']/g, function(m) { return map[m] })
     }
 
     /**

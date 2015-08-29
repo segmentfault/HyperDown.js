@@ -382,22 +382,22 @@
 	            for (var key in lines) {
 	                var line = lines[key];
 	                // code block is special
-	                if (matches = line.match(/^(~|`){3,}([^`~]*)$/i)) {
+	                if (matches = line.match(/^(\s*)(~|`){3,}([^`~]*)$/i)) {
 	                    if (this.isBlock('code')) {
 	                        var block = this.getBlock();
-	                        var _isAfterList = block[3][2];
+	                        var isAfterList = block[3][2];
 
-	                        if (_isAfterList) {
+	                        if (isAfterList) {
 	                            this.combineBlock().setBlock(key);
 	                        } else {
 	                            this.setBlock(key).endBlock();
 	                        }
 	                    } else {
-	                        isAfterList = false;
+	                        var isAfterList = false;
 	                        if (this.isBlock('list')) {
 	                            var block = this.getBlock();
 	                            var space = block[3];
-	                            var _isAfterList2 = space > 0 && matches[1].length >= space || matches[1].length > space;
+	                            isAfterList = space > 0 && matches[1].length >= space || matches[1].length > space;
 	                        }
 	                        this.startBlock('code', key, [matches[1], matches[3], isAfterList]);
 	                    }
@@ -680,12 +680,26 @@
 	         */
 	    }, {
 	        key: 'parseCode',
-	        value: function parseCode(lines, lang) {
+	        value: function parseCode(lines, parts) {
+	            var _parts = _slicedToArray(parts, 2);
+
+	            var blank = _parts[0];
+	            var lang = _parts[1];
+
 	            lang = lang.trim();
-	            lines = lines.slice(1, -1);
+	            var count = blank.length;
+
+	            if (!/^[_a-z0-9-\+\#]+$/i.test(lang)) {
+	                lang = null;
+	            }
+
+	            lines = lines.slice(1, -1).map(function (line) {
+	                var pattern = new RegExp('/^[ ]{' + count + '}/');
+	                return line.replace(pattern, '');
+	            });
 	            var str = lines.join('\n');
 
-	            return (/^\s*$/.test(str) ? '' : '<pre><code' + (lang ? ' class="' + lang + '"' : '') + '>' + this.htmlspecialchars(lines.join("\n")) + '</code></pre>'
+	            return (/^\s*$/.test(str) ? '' : '<pre><code' + (lang ? ' class="' + lang + '"' : '') + '>' + this.htmlspecialchars(lines.join('\n')) + '</code></pre>'
 	            );
 	        }
 
