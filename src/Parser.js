@@ -295,6 +295,7 @@ export default class Parser {
         let emptyCount = 0
         // analyze by line
         for (let key in lines) {
+            key = parseInt(key) // ES6 的 bug for key in Array 循环时返回的 key 是字符串，不是 int
             let line = lines[key]
             // code block is special
             if (matches = line.match(/^(\s*)(~|`){3,}([^`~]*)$/i)) {
@@ -353,8 +354,9 @@ export default class Parser {
                 // list
                 case /^(\s*)((?:[0-9a-z]\.)|\-|\+|\*)\s+/.test(line):
                     let matches = line.match(/^(\s*)((?:[0-9a-z]\.)|\-|\+|\*)\s+/)
+
                     let listSpace = matches[1].length
-                    let emptyCount = 0
+                    emptyCount = 0
 
                     // opened
                     if (this.isBlock('list')) {
@@ -481,7 +483,7 @@ export default class Parser {
                             }
 
                             emptyCount++
-                        } else if (emptyCount == 0) {
+                        } else if (emptyCount === 0) {
                             this.setBlock(key)
                         } else {
                             this.startBlock('normal', key)
@@ -514,7 +516,7 @@ export default class Parser {
                         }
                     } else {
                         let block = this.getBlock()
-                        if (!block || !block.length || block[0] !== 'normal') {
+                        if (block === null || block.length === 0 || block[0] !== 'normal') {
                             this.startBlock('normal', key)
                         } else {
                             this.setBlock(key)
@@ -535,7 +537,7 @@ export default class Parser {
     optimizeBlocks(blocks, lines) {
         blocks = this.call('beforeOptimizeBlocks', blocks, lines)
 
-        blocks.forEach(function(block, key) {
+        blocks.forEach( (block, key) => {
             let prevBlock = blocks[key - 1] ? blocks[key - 1] : null
             let nextBlock = blocks[key + 1] ? blocks[key + 1] : null
 
@@ -552,13 +554,13 @@ export default class Parser {
             }
 
             if ('normal' === type) {
-                // one sigle empty line
+                // combine two splitted list
                 if (from === to && lines[from].match(/^\s*$/)
-                    && prevBlock && nextBlock) {
+                    && prevBlock.length && nextBlock.length) {
                     if (prevBlock[0] === 'list' && nextBlock[0] === 'list') {
                         // combine 3 blocks
                         blocks[key - 1] = ['list', prevBlock[1], nextBlock[2], null]
-                        array_splice(blocks, key, 2)
+                        blocks.splice(key, 2)
                     }
                 }
             }
@@ -840,11 +842,11 @@ export default class Parser {
      * @return string
      */
     parseNormal(lines) {
-        lines.forEach((line, key) => {
-            lines[key] = this.parseInline(line)
+        lines = lines.map( line => {
+            return this.parseInline(line)
         })
 
-        let str = lines.join("\n")
+        let str = lines.join("\n").trim()
         str = str.replace(/(\n\s*){2,}/, "</p><p>")
         str = str.replace(/\n/, "<br>")
 

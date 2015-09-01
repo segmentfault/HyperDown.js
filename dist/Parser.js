@@ -345,6 +345,7 @@ var Parser = (function () {
             var emptyCount = 0;
             // analyze by line
             for (var key in lines) {
+                key = parseInt(key); // ES6 的 bug for key in Array 循环时返回的 key 是字符串，不是 int
                 var line = lines[key];
                 // code block is special
                 if (matches = line.match(/^(\s*)(~|`){3,}([^`~]*)$/i)) {
@@ -399,8 +400,9 @@ var Parser = (function () {
                     // list
                     case /^(\s*)((?:[0-9a-z]\.)|\-|\+|\*)\s+/.test(line):
                         var matches = line.match(/^(\s*)((?:[0-9a-z]\.)|\-|\+|\*)\s+/);
+
                         var listSpace = matches[1].length;
-                        var emptyCount = 0;
+                        emptyCount = 0;
 
                         // opened
                         if (this.isBlock('list')) {
@@ -545,7 +547,7 @@ var Parser = (function () {
                                 }
 
                                 emptyCount++;
-                            } else if (emptyCount == 0) {
+                            } else if (emptyCount === 0) {
                                 this.setBlock(key);
                             } else {
                                 this.startBlock('normal', key);
@@ -578,7 +580,7 @@ var Parser = (function () {
                             }
                         } else {
                             var block = this.getBlock();
-                            if (!block || !block.length || block[0] !== 'normal') {
+                            if (block === null || block.length === 0 || block[0] !== 'normal') {
                                 this.startBlock('normal', key);
                             } else {
                                 this.setBlock(key);
@@ -622,12 +624,12 @@ var Parser = (function () {
                 }
 
                 if ('normal' === type) {
-                    // one sigle empty line
-                    if (from === to && lines[from].match(/^\s*$/) && prevBlock && nextBlock) {
+                    // combine two splitted list
+                    if (from === to && lines[from].match(/^\s*$/) && prevBlock.length && nextBlock.length) {
                         if (prevBlock[0] === 'list' && nextBlock[0] === 'list') {
                             // combine 3 blocks
                             blocks[key - 1] = ['list', prevBlock[1], nextBlock[2], null];
-                            array_splice(blocks, key, 2);
+                            blocks.splice(key, 2);
                         }
                     }
                 }
@@ -1022,11 +1024,11 @@ var Parser = (function () {
         value: function parseNormal(lines) {
             var _this3 = this;
 
-            lines.forEach(function (line, key) {
-                lines[key] = _this3.parseInline(line);
+            lines = lines.map(function (line) {
+                return _this3.parseInline(line);
             });
 
-            var str = lines.join("\n");
+            var str = lines.join("\n").trim();
             str = str.replace(/(\n\s*){2,}/, "</p><p>");
             str = str.replace(/\n/, "<br>");
 

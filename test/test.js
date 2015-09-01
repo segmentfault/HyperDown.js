@@ -30,7 +30,7 @@ describe('HyperDown.js', function() {
 
     describe('list', function() {
         it('ul', function() {
-            assert.equal('<ul><li><p>list</p></li></ul>', parser.makeHtml('- list'));
+            assert.equal('<ul><li><p>list</p></li></ul>', parser.makeHtml('\n\n - list'));
         });
         it('ol', function() {
             assert.equal('<ol><li><p>list</p></li></ol>', parser.makeHtml('1. list'));
@@ -81,6 +81,4 @@ describe('HyperDown.js', function() {
             assert.equal('<table><thead><tr><th>test</th><th>test</th></tr></thead><thead><tr><th>------</th><th colspan="2">------</th></tr></thead><thead><tr><th>test</th><th>test</th></tr></thead></tbody></table>', parser.makeHtml('test | test\n------ | ------|\ntest | test'));
         });
     });
-
-
 });
