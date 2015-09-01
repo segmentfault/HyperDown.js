@@ -75,7 +75,7 @@ var Parser = (function () {
     }, {
         key: 'makeHolder',
         value: function makeHolder(str) {
-            var key = '|' + this.uniqid + this.id + '|';
+            var key = '|\r' + this.uniqid + this.id + '\r|';
             this.id++;
             this.holders[key] = str;
             return key;
@@ -194,10 +194,16 @@ var Parser = (function () {
     }, {
         key: 'releaseHolder',
         value: function releaseHolder(text) {
-            for (var key in this.holders) {
-                var value = this.holders[key];
-                text = text.replace(key, value);
+
+            var deep = 0;
+            while (text.indexOf("|\r") !== -1 && deep < 10) {
+                for (var key in this.holders) {
+                    var value = this.holders[key];
+                    text = text.replace(key, value);
+                }
+                deep++;
             }
+
             this.holders.clear();
 
             return text;
@@ -293,15 +299,19 @@ var Parser = (function () {
             }
 
             // escape
-            var escapeMatches = /\\(`|\*|_)/.exec(text);
+            var escapeMatches = /\\(`|\*|_|~)/.exec(text);
             if (escapeMatches) {
                 text = this.makeHolder(this.htmlspecialchars(escapeMatches[1]));
             }
 
             // strong and em and some fuck
-            text = text.replace(/(_|\*){3}(.+?)\1{3}/, "<strong><em>$2</em></strong>");
-            text = text.replace(/(_|\*){2}(.+?)\1{2}/, "<strong>$2</strong>");
-            text = text.replace(/(_|\*)(.+?)\1/, "<em>$2</em>");
+            text = text.replace(/(\*{3})(.+?)\1/, "<strong><em>$2</em></strong>");
+            text = text.replace(/(\*{2})(.+?)\1/, "<strong>$2</strong>");
+            text = text.replace(/(\*)(.+?)\1/, "<em>$2</em>");
+            text = text.replace(/(\s+)(_{3})(.+?)\2(\s+)/, "$1<strong><em>$3</em></strong>$4");
+            text = text.replace(/(\s+)(_{2})(.+?)\2(\s+)/, "$1<strong>$3</strong>$4");
+            text = text.replace(/(\s+)(_)(.+?)\2(\s+)/, "$1<em>$3</em>$4");
+            text = text.replace(/(~{2})(.+?)\1/, "<del>$2</del>");
             text = text.replace(/<(https?:\/\/.+)>/i, "<a href=\"$1\">$1</a>");
             text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i, "<a href=\"mailto:$1\">$1</a>");
 
@@ -312,6 +322,7 @@ var Parser = (function () {
 
             // release
             text = this.releaseHolder(text);
+
             text = this.call('afterParseInline', text);
 
             return text;
@@ -365,9 +376,9 @@ var Parser = (function () {
                 var htmlPattern1 = new RegExp('^\s*<(' + special + ')(\s+[^>]*)?>', 'i');
                 var htmlPattern2 = new RegExp('<\/(' + special + ')>\s*$', 'i');
                 if (matches = line.match(htmlPattern1)) {
-                    tag = matches[1].toLowerCase();
-                    if (!this.isBlock('html', tag) && !this.isBlock('pre')) {
-                        this.startBlock('html', key, tag);
+                    var _tag = matches[1].toLowerCase();
+                    if (!this.isBlock('html', _tag) && !this.isBlock('pre')) {
+                        this.startBlock('html', key, _tag);
                     }
 
                     continue;
@@ -413,8 +424,17 @@ var Parser = (function () {
                         this.startBlock('definition', key).endBlock();
                         break;
 
+                    // block quote
+                    case /^\s*>/.test(line):
+                        if (this.isBlock('quote')) {
+                            this.setBlock(key);
+                        } else {
+                            this.startBlock('quote', key);
+                        }
+                        break;
+
                     // pre
-                    case /^ {4,}/.test(line):
+                    case /^ {4}/.test(line):
                         emptyCount = 0;
                         if (this.isBlock('pre')) {
                             this.setBlock(key);
@@ -503,15 +523,6 @@ var Parser = (function () {
                             this.backBlock(1, 'mh', multiHeadingMatches[1][0] == '=' ? 1 : 2).setBlock(key).endBlock();
                         } else {
                             this.startBlock('normal', key);
-                        }
-                        break;
-
-                    // block quote
-                    case /^>/.test(line):
-                        if (this.isBlock('quote')) {
-                            this.setBlock(key);
-                        } else {
-                            this.startBlock('quote', key);
                         }
                         break;
 
@@ -745,7 +756,7 @@ var Parser = (function () {
         key: 'parseQuote',
         value: function parseQuote(lines) {
             lines.forEach(function (line, key) {
-                lines[key] = line.replace(/^> ?/, '');
+                lines[key] = line.replace(/^\s*> ?/, '');
             });
             var str = lines.join('\n');
             return (/^\s*$/.test(str) ? '' : '<blockquote>' + this.parse(str) + '</blockquote>'
@@ -894,62 +905,53 @@ var Parser = (function () {
             var ignore = head ? 1 : 0;
 
             var html = '<table>';
-            var body = null;
+            var body = false;
 
-            for (var key in lines) {
+            var _loop = function (key) {
                 var line = lines[key];
                 if (key === ignore) {
                     head = false;
                     body = true;
-                    continue;
+                    return 'continue';
                 }
+
+                if (line) {
+                    line = line.trim();
+                }
+
                 if (line[0] === '|') {
                     line = line.substr(1);
+
                     if (line[line.length - 1] === '|') {
                         line = line.substr(0, -1);
                     }
                 }
 
-                line = line.replace(/^(\|?)(.*?)\1$/, "$2", line);
-                var rows = line.split('|').map(function (item) {
-                    return item.trim();
+                var rows = line.split('|').map(function (row) {
+                    if (row.match(/^\s+$/)) {
+                        return ' ';
+                    } else {
+                        return row.trim();
+                    }
                 });
+
                 var columns = [];
                 var last = -1;
 
-                var _iteratorNormalCompletion5 = true;
-                var _didIteratorError5 = false;
-                var _iteratorError5 = undefined;
-
-                try {
-                    for (var _iterator5 = rows[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-                        var row = _step5.value;
-
-                        if (row.length > 0) {
-                            last++;
-                            columns[last] = [1, row];
-                        } else if (columns[last]) {
-                            columns[last][0]++;
-                        }
+                rows.forEach(function (row) {
+                    if (row.length > 0) {
+                        last++;
+                        columns[last] = [columns[last] ? columns[last][0] + 1 : 1, row];
+                    } else if (columns[last]) {
+                        columns[last][0]++;
+                    } else {
+                        columns[0] = [1, row];
                     }
-                } catch (err) {
-                    _didIteratorError5 = true;
-                    _iteratorError5 = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion5 && _iterator5['return']) {
-                            _iterator5['return']();
-                        }
-                    } finally {
-                        if (_didIteratorError5) {
-                            throw _iteratorError5;
-                        }
-                    }
-                }
+                });
 
-                if (head) {
+                if (head === true) {
                     html += '<thead>';
-                } else if (body) {
+                } else if (body === true) {
                     html += '<tbody>';
                 }
 
@@ -982,6 +984,12 @@ var Parser = (function () {
                 } else if (body) {
                     body = false;
                 }
+            };
+
+            for (var key in lines) {
+                var _ret = _loop(key);
+
+                if (_ret === 'continue') continue;
             }
 
             if (body !== null) {
@@ -1074,27 +1082,27 @@ var Parser = (function () {
     }, {
         key: 'parseHtml',
         value: function parseHtml(lines, type) {
-            var _iteratorNormalCompletion6 = true;
-            var _didIteratorError6 = false;
-            var _iteratorError6 = undefined;
+            var _iteratorNormalCompletion5 = true;
+            var _didIteratorError5 = false;
+            var _iteratorError5 = undefined;
 
             try {
-                for (var _iterator6 = lines[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
-                    var line = _step6.value;
+                for (var _iterator5 = lines[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+                    var line = _step5.value;
 
                     line = this.parseInline(line, this.specialWhiteList[type] ? this.specialWhiteList[type] : '');
                 }
             } catch (err) {
-                _didIteratorError6 = true;
-                _iteratorError6 = err;
+                _didIteratorError5 = true;
+                _iteratorError5 = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion6 && _iterator6['return']) {
-                        _iterator6['return']();
+                    if (!_iteratorNormalCompletion5 && _iterator5['return']) {
+                        _iterator5['return']();
                     }
                 } finally {
-                    if (_didIteratorError6) {
-                        throw _iteratorError6;
+                    if (_didIteratorError5) {
+                        throw _iteratorError5;
                     }
                 }
             }

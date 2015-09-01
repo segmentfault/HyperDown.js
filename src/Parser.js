@@ -50,7 +50,7 @@ export default class Parser {
      * @return string
      */
     makeHolder (str) {
-        let key = '|' + this.uniqid + this.id + '|'
+        let key = '|\r' + this.uniqid + this.id + '\r|'
         this.id++
         this.holders[key] = str
         return key
@@ -147,10 +147,16 @@ export default class Parser {
      * @return string
      */
     releaseHolder(text) {
-        for (let key in this.holders) {
-            let value = this.holders[key]
-            text = text.replace(key, value)
+
+        let deep = 0;
+        while (text.indexOf("|\r") !== -1 && deep < 10) {
+            for (let key in this.holders) {
+                let value = this.holders[key]
+                text = text.replace(key, value)
+            }
+            deep ++;
         }
+
         this.holders.clear()
 
         return text
@@ -244,15 +250,19 @@ export default class Parser {
         }
 
         // escape
-        let escapeMatches = /\\(`|\*|_)/.exec(text)
+        let escapeMatches = /\\(`|\*|_|~)/.exec(text)
         if (escapeMatches) {
             text = this.makeHolder(this.htmlspecialchars(escapeMatches[1]))
         }
 
         // strong and em and some fuck
-        text = text.replace(/(_|\*){3}(.+?)\1{3}/, "<strong><em>$2</em></strong>")
-        text = text.replace(/(_|\*){2}(.+?)\1{2}/, "<strong>$2</strong>")
-        text = text.replace(/(_|\*)(.+?)\1/, "<em>$2</em>")
+        text = text.replace(/(\*{3})(.+?)\1/, "<strong><em>$2</em></strong>")
+        text = text.replace(/(\*{2})(.+?)\1/, "<strong>$2</strong>")
+        text = text.replace(/(\*)(.+?)\1/, "<em>$2</em>")
+        text = text.replace(/(\s+)(_{3})(.+?)\2(\s+)/, "$1<strong><em>$3</em></strong>$4")
+        text = text.replace(/(\s+)(_{2})(.+?)\2(\s+)/, "$1<strong>$3</strong>$4")
+        text = text.replace(/(\s+)(_)(.+?)\2(\s+)/, "$1<em>$3</em>$4")
+        text = text.replace(/(~{2})(.+?)\1/, "<del>$2</del>")
         text = text.replace(/<(https?:\/\/.+)>/i, "<a href=\"$1\">$1</a>")
         text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i, "<a href=\"mailto:$1\">$1</a>")
 
@@ -264,6 +274,7 @@ export default class Parser {
 
         // release
         text = this.releaseHolder(text)
+
         text = this.call('afterParseInline', text)
 
         return text
@@ -318,7 +329,7 @@ export default class Parser {
             let htmlPattern1 = new RegExp('^\s*<(' + special + ')(\s+[^>]*)?>', 'i')
             let htmlPattern2 = new RegExp('<\/(' + special+ ')>\s*$', 'i')
             if (matches = line.match(htmlPattern1)) {
-                tag = matches[1].toLowerCase()
+                let tag = matches[1].toLowerCase()
                 if (!this.isBlock('html', tag) && !this.isBlock('pre')) {
                     this.startBlock('html', key, tag)
                 }
@@ -368,8 +379,17 @@ export default class Parser {
                         .endBlock()
                     break
 
+                // block quote
+                case /^\s*>/.test(line):
+                    if (this.isBlock('quote')) {
+                        this.setBlock(key)
+                    } else {
+                        this.startBlock('quote', key)
+                    }
+                    break
+
                 // pre
-                case /^ {4,}/.test(line):
+                case /^ {4}/.test(line):
                     emptyCount = 0
                     if (this.isBlock('pre')) {
                         this.setBlock(key)
@@ -439,15 +459,6 @@ export default class Parser {
                             .endBlock()
                     } else {
                         this.startBlock('normal', key)
-                    }
-                    break
-
-                // block quote
-                case /^>/.test(line):
-                    if (this.isBlock('quote')) {
-                        this.setBlock(key)
-                    } else {
-                        this.startBlock('quote', key)
                     }
                     break
 
@@ -638,7 +649,7 @@ export default class Parser {
      */
     parseQuote(lines) {
         lines.forEach( (line, key) => {
-            lines[key] = line.replace(/^> ?/, '')
+            lines[key] = line.replace(/^\s*> ?/, '')
         })
         let str = lines.join('\n')
         return /^\s*$/.test(str) ? '' : '<blockquote>' + this.parse(str) + '</blockquote>'
@@ -728,7 +739,7 @@ export default class Parser {
         let ignore = head ? 1 : 0
 
         let html = '<table>'
-        let body = null
+        let body = false
 
         for (let key in lines) {
             let line = lines[key]
@@ -737,30 +748,44 @@ export default class Parser {
                 body = true
                 continue
             }
+
+            if (line) {
+                line = line.trim()
+            }
+
             if (line[0] === '|') {
-                line = line.substr( 1)
+                line = line.substr(1)
+
                 if (line[line.length - 1] === '|') {
                     line = line.substr(0, -1)
                 }
             }
 
-            line = line.replace(/^(\|?)(.*?)\1$/, "$2", line)
-            let rows = line.split('|').map(function(item){return item.trim()})
+            let rows = line.split('|').map( row => {
+                if (row.match(/^\s+$/)) {
+                    return ' '
+                } else {
+                    return row.trim()
+                }
+            })
+
             let columns = []
             let last = -1
 
-            for (let row of rows) {
+            rows.forEach( row => {
                 if (row.length > 0) {
                     last++
-                    columns[last] = [1, row]
+                    columns[last] = [columns[last] ? columns[last][0] + 1 : 1, row];
                 } else if (columns[last]) {
                     columns[last][0]++
+                } else {
+                    columns[0] = [1, row]
                 }
-            }
+            })
 
-            if (head) {
+            if (head === true) {
                 html += '<thead>'
-            } else if (body) {
+            } else if (body === true) {
                 html += '<tbody>'
             }
 

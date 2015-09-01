@@ -73,4 +73,14 @@ describe('HyperDown.js', function() {
         });
     });
 
+    describe('table', function() {
+        it('type1 html ', function() {
+            assert.equal('<table><tbody><tr><td>test</td><td>test</td><tr></tbody></table>', parser.makeHtml('<table><tbody><tr><td>test</td><td>test</td><tr></tbody></table>'));
+        });
+        it('type2 |', function() {
+            assert.equal('<table><thead><tr><th>test</th><th>test</th></tr></thead><thead><tr><th>------</th><th colspan="2">------</th></tr></thead><thead><tr><th>test</th><th>test</th></tr></thead></tbody></table>', parser.makeHtml('test | test\n------ | ------|\ntest | test'));
+        });
+    });
+
+
 });
