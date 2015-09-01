@@ -5,6 +5,11 @@ HyperDown.js
 
 翻译为 ES6 的 [src/Parser.js](src/Parser.js)
 
+##使用方法##
+```
+npm install hyperdown
+```
+
 ##开发者使用方法##
 ###nodejs 中使用##
 [dist/Parser.js](dist/Parser.js) (用 babel 编译成 ES5 的版本)
