@@ -753,7 +753,7 @@ export default class Parser {
 
         for (let key in lines) {
             let line = lines[key]
-            if (key === ignore) {
+            if (parseInt(key) === ignore) {
                 head = false
                 body = true
                 continue
@@ -767,7 +767,7 @@ export default class Parser {
                 line = line.substr(1)
 
                 if (line[line.length - 1] === '|') {
-                    line = line.substr(0, -1)
+                    line = line.slice(0, -1)
                 }
             }
 
@@ -1050,3 +1050,11 @@ export default class Parser {
         return this
     }
 }
+var parser = new Parser()
+var text = `| Item      |    Value | Qty  |
+| :-------- | --------:| :--: |
+| Computer  | 1600 USD |  5   |
+| Phone     |   12 USD |  12  |
+| Pipe      |    1 USD | 234  |`
+
+console.log(parser.makeHtml(text))
