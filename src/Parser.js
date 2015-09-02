@@ -1050,11 +1050,3 @@ export default class Parser {
         return this
     }
 }
-var parser = new Parser()
-var text = `| Item      |    Value | Qty  |
-| :-------- | --------:| :--: |
-| Computer  | 1600 USD |  5   |
-| Phone     |   12 USD |  12  |
-| Pipe      |    1 USD | 234  |`
-
-console.log(parser.makeHtml(text))

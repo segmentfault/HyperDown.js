@@ -466,7 +466,7 @@ var Parser = (function () {
                                 head = true;
                                 this.backBlock(1, 'table');
                             }
-                            console.log(tableMatches);
+
                             if (tableMatches[1][0] == '|') {
                                 tableMatches[1] = tableMatches[1].substr(1);
 
@@ -919,7 +919,7 @@ var Parser = (function () {
 
             var _loop = function (key) {
                 var line = lines[key];
-                if (key === ignore) {
+                if (parseInt(key) === ignore) {
                     head = false;
                     body = true;
                     return 'continue';
@@ -933,7 +933,7 @@ var Parser = (function () {
                     line = line.substr(1);
 
                     if (line[line.length - 1] === '|') {
-                        line = line.substr(0, -1);
+                        line = line.slice(0, -1);
                     }
                 }
 

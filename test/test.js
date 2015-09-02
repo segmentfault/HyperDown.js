@@ -78,7 +78,7 @@ describe('HyperDown.js', function() {
             assert.equal('<table><tbody><tr><td>test</td><td>test</td><tr></tbody></table>', parser.makeHtml('<table><tbody><tr><td>test</td><td>test</td><tr></tbody></table>'));
         });
         it('type2 |', function() {
-            assert.equal('<table><thead><tr><th>test</th><th>test</th></tr></thead><thead><tr><th>------</th><th colspan="2">------</th></tr></thead><thead><tr><th>test</th><th>test</th></tr></thead></tbody></table>',
+            assert.equal('<table><thead><tr><th align="left">Item</th><th>Value</th><th align="right">Qty</th></tr></thead><tbody><tr><td align="left">Computer</td><td>1600 USD</td><td align="right">5</td></tr><tr><td align="left">Phone</td><td>12 USD</td><td align="right">12</td></tr><tr><td align="left">Pipe</td><td>1 USD</td><td align="right">234</td></tr></tbody></table>',
                 parser.makeHtml('| Item      |    Value | Qty  |\n| :-------- | --------:| :--: |\n| Computer  | 1600 USD |  5   |\n| Phone     |   12 USD |  12  |\n| Pipe      |    1 USD | 234  |'));
         });
     });

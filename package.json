@@ -3,7 +3,7 @@
   "description": "Markdown解析器",
   "repository": "https://github.com/SegmentFault/HyperDown.js",
   "license": "BSD-4-Clause",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "devDependencies": {
     "babel": "^5.8.22",
     "babel-core": "^5.8.22",

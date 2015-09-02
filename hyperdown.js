@@ -895,7 +895,7 @@
 	                        var space = _row[0];
 	                        var type = _row[1];
 	                        var line = _row[2];
-	                        var _text = _row[3];
+	                        var text = _row[3];
 
 	                        if (space !== minSpace) {
 	                            var pattern = new RegExp("^\s{" + secondMinSpace + "}");
@@ -913,7 +913,7 @@
 	                                html += "<li>" + this.parse(leftLines.join("\n")) + "</li>";
 	                            }
 
-	                            leftLines = [_text];
+	                            leftLines = [text];
 	                            lastType = type;
 	                        }
 	                    } else {
@@ -1342,11 +1342,6 @@
 	})();
 
 	exports['default'] = Parser;
-
-	var parser = new Parser();
-	var text = '| Item      |    Value | Qty  |\n| :-------- | --------:| :--: |\n| Computer  | 1600 USD |  5   |\n| Phone     |   12 USD |  12  |\n| Pipe      |    1 USD | 234  |';
-
-	console.log(parser.makeHtml(text));
 	module.exports = exports['default'];
 
 /***/ },
