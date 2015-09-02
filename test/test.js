@@ -18,13 +18,13 @@ describe('HyperDown.js', function() {
 
     describe('bold', function() {
         it('**bold**', function() {
-            assert.equal('<p><strong>bold</strong></p>', parser.makeHtml('**bold**'));
+            assert.equal('<p>123<strong>bold</strong>123</p>', parser.makeHtml('123**bold**123'));
         });
     });
 
     describe('italy', function() {
         it('*italy*', function() {
-            assert.equal('<p><em>italy</em></p>', parser.makeHtml('*italy*'));
+            assert.equal('<p>123 <em>italy</em> 123</p>', parser.makeHtml('123 *italy* 123'));
         });
     });
 
@@ -39,10 +39,10 @@ describe('HyperDown.js', function() {
 
     describe('link', function() {
         it('type1', function() {
-            assert.equal('<p><a href="http://sf.gg">sf.gg</a></p>', parser.makeHtml('[sf.gg](http://sf.gg)'));
+            assert.equal('<p><a href="http://sf.gg">sf.gg</a>123</p>', parser.makeHtml('[sf.gg](http://sf.gg)123'));
         });
         it('type2', function() {
-            assert.equal('<p><a href="http://sf.gg">http://sf.gg</a></p>', parser.makeHtml('http://sf.gg'));
+            assert.equal('<p>123<a href="http://sf.gg">http://sf.gg</a> 123 <a href="http://sf.gg">http://sf.gg</a></p>', parser.makeHtml('123http://sf.gg 123 http://sf.gg'));
         });
         it('type3', function() {
             assert.equal('<p><a href="http://sf.gg">sf.gg</a></p>', parser.makeHtml('[sf.gg][1]\n [1]: http://sf.gg'));
@@ -63,7 +63,7 @@ describe('HyperDown.js', function() {
             assert.equal('<pre><code class="javascript">var s=&quot;123&quot;;</code></pre>', parser.makeHtml('```javascript\nvar s="123";\n```'));
         });
         it('type2', function() {
-            assert.equal('<p><code>123</code></p>', parser.makeHtml('`123`'));
+            assert.equal('<p><code>Objective-C</code>使用了消息机制代替调用方法。</p>', parser.makeHtml('`Objective-C`使用了消息机制代替调用方法。'));
         });
     });
 
@@ -79,6 +79,12 @@ describe('HyperDown.js', function() {
         });
         it('type2 |', function() {
             assert.equal('<table><thead><tr><th>test</th><th>test</th></tr></thead><thead><tr><th>------</th><th colspan="2">------</th></tr></thead><thead><tr><th>test</th><th>test</th></tr></thead></tbody></table>', parser.makeHtml('test | test\n------ | ------|\ntest | test'));
+        });
+    });
+
+    describe('footnote', function() {
+        it('脚注 ', function() {
+            assert.equal('123', parser.makeHtml('[^demo]: 这是一个示例脚注。'));
         });
     });
 });

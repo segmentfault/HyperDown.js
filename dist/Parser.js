@@ -89,8 +89,8 @@ var Parser = (function () {
         key: 'initText',
         value: function initText(text) {
             if (text) {
-                text = text.replace('\t', '    ');
-                text = text.replace('\r', '');
+                text = text.replace(/\t/g, '    ');
+                text = text.replace(/\r/g, '');
             } else {
                 text = '';
             }
@@ -119,6 +119,7 @@ var Parser = (function () {
                     html += '<li id="fn-' + index + '">' + val + '</li>';
 
                     index++;
+                    val = this.footnotes.pop();
                 }
                 html += '</ol></div>';
             }
@@ -134,7 +135,7 @@ var Parser = (function () {
     }, {
         key: 'parse',
         value: function parse(text) {
-            var _this = this;
+            var _this2 = this;
 
             var lines = text.split("\n");
             var blocks = this.parseBlock(text, lines);
@@ -151,9 +152,9 @@ var Parser = (function () {
                 var extract = lines.slice(start, end + 1);
                 var method = 'parse' + type.slice(0, 1).toUpperCase() + type.slice(1);
                 var beforeMethod = 'beforeParse' + type.slice(0, 1).toUpperCase() + type.slice(1);
-                extract = _this.call(beforeMethod, extract, value);
-                var result = _this[method](extract, value);
-                result = _this.call('after' + method.slice(0, 1).toUpperCase() + method.slice(1), result, value);
+                extract = _this2.call(beforeMethod, extract, value);
+                var result = _this2[method](extract, value);
+                result = _this2.call('after' + method.slice(0, 1).toUpperCase() + method.slice(1), result, value);
 
                 html += result;
             });
@@ -222,14 +223,20 @@ var Parser = (function () {
             var whiteList = arguments.length <= 1 || arguments[1] === undefined ? '' : arguments[1];
 
             text = this.call('beforeParseInline', text);
-
+            var _this = this;
             // code
-            var codeMatches = /(^|[^\\])`(.+?)`/.exec(text);
-            if (codeMatches) {
-                text = codeMatches[1] + this.makeHolder('<code>' + this.htmlspecialchars(codeMatches[2]) + '</code>');
-            }
+            text = text.replace(/(^|[^\\])(`+)(.+?)\2/g, function () {
+                var codeMatches = /(^|[^\\])(`+)(.+?)\2/g.exec(text);
+                return codeMatches[1] + _this.makeHolder('<code>' + _this.htmlspecialchars(codeMatches[3]) + '</code>');
+            });
 
-            // escape unsafe tags
+            // link
+            text = text.replace(/<(https?:\/\/.+)>/ig, function () {
+                var linkMatches = /<(https?:\/\/.+)>/ig.exec(text);
+                return '<a href="' + linkMatches[1] + '">' + linkMatches[1] + '</a>';
+            });
+
+            // encode unsafe tags
             var unsafeTagMatches = /<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i.exec(text);
             if (unsafeTagMatches) {
                 var whiteLists = this.commonWhiteList + '|' + whiteList;
@@ -240,83 +247,84 @@ var Parser = (function () {
                 }
             }
 
-            text = text.replace('<', '&lt;');
-            text = text.replace('>', '&gt;');
+            text = text.replace(/</g, '&lt;');
+            text = text.replace(/>/g, '&gt;');
 
-            var footnotePattern = /\[\^((?:[^\]]|\]|\[)+?)\]/;
-            var footnoteMatches = footnotePattern.exec(text);
-            if (footnoteMatches) {
-                var id = this.footnotes.indexOf(footnoteMatches[1]);
+            // footnote
+            var footnotePattern = /\[\^((?:[^\]]|\]|\[)+?)\]/g;
+
+            text = text.replace(footnotePattern, function () {
+                var footnoteMatches = text.match(footnoteMatches);
+                var id = _this.footnotes.indexOf(footnoteMatches[1]);
 
                 if (id === -1) {
-                    id = this.footnotes.length + 1;
-                    this.footnotes[id] = footnoteMatches[1];
+                    id = _this.footnotes.length + 1;
+                    _this.footnotes[id] = footnoteMatches[1];
                 }
 
-                text = this.makeHolder('<sup id="fnref-' + id + '"><a href="#fn-' + id + '" class="footnote-ref">' + id + '</a></sup>');
-            }
+                return _this.makeHolder('<sup id="fnref-' + id + '"><a href="#fn-' + id + '" class="footnote-ref">' + id + '</a></sup>');
+            });
 
             // image
             var imagePattern1 = /!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/;
             var imageMatches1 = imagePattern1.exec(text);
-            if (imageMatches1) {
-                var escaped = this.escapeBracket(imageMatches1[1]);
-                var url = this.escapeBracket(imageMatches1[2]);
-                text = this.makeHolder('<img src="' + url + '" alt="' + escaped + '" title="' + escaped + '">');
-            }
+            text = text.replace(imagePattern1, function () {
+                var escaped = _this.escapeBracket(imageMatches1[1]);
+                var url = _this.escapeBracket(imageMatches1[2]);
+                return _this.makeHolder('<img src="' + url + '" alt="' + escaped + '" title="' + escaped + '">');
+            });
 
             var imagePattern2 = /!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]/;
             var imageMatches2 = imagePattern2.exec(text);
-            if (imageMatches2) {
-                var escaped = this.escapeBracket(imageMatches2[1]);
+            text = text.replace(imagePattern2, function () {
+                var escaped = _this.escapeBracket(imageMatches2[1]);
                 var result = '';
-                if (this.definitions[imageMatches2[2]]) {
-                    result = '<img src="' + this.definitions[imageMatches2[2]] + '" alt="' + escaped + '" title="' + escaped + '">';
+                if (_this.definitions[imageMatches2[2]]) {
+                    result = '<img src="' + _this.definitions[imageMatches2[2]] + '" alt="' + escaped + '" title="' + escaped + '">';
                 } else {
                     result = escaped;
                 }
-                text = this.makeHolder(result);
-            }
+                return _this.makeHolder(result);
+            });
 
             // link
             var linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/;
             var linkMatches1 = linkPattern1.exec(text);
 
-            if (linkMatches1) {
-                var escaped = this.escapeBracket(linkMatches1[1]);
-                var url = this.escapeBracket(linkMatches1[2]);
-                text = this.makeHolder('<a href="' + url + '">' + escaped + '</a>');
-            }
+            text = text.replace(linkPattern1, function () {
+                var escaped = _this.escapeBracket(linkMatches1[1]);
+                var url = _this.escapeBracket(linkMatches1[2]);
+                return _this.makeHolder('<a href="' + url + '">' + escaped + '</a>');
+            });
 
             var linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/;
             var linkMatches2 = linkPattern2.exec(text);
-            if (linkMatches2) {
-                var escaped = this.escapeBracket(linkMatches2[1]);
+            text = text.replace(linkPattern2, function () {
+                var escaped = _this.escapeBracket(linkMatches2[1]);
 
-                var result = this.definitions[linkMatches2[2]] ? '<a href="' + this.definitions[linkMatches2[2]] + '">' + escaped + '</a>' : escaped;
+                var result = _this.definitions[linkMatches2[2]] ? '<a href="' + _this.definitions[linkMatches2[2]] + '">' + escaped + '</a>' : escaped;
 
-                text = this.makeHolder(result);
-            }
+                return _this.makeHolder(result);
+            });
 
             // escape
-            var escapeMatches = /\\(`|\*|_|~)/.exec(text);
-            if (escapeMatches) {
-                text = this.makeHolder(this.htmlspecialchars(escapeMatches[1]));
-            }
+            text = text.replace(/\\(`|\*|_|~)/, function () {
+                var escapeMatches = /\\(`|\*|_|~)/.exec(text);
+                return _this.makeHolder(_this.htmlspecialchars(escapeMatches[1]));
+            });
 
             // strong and em and some fuck
-            text = text.replace(/(\*{3})(.+?)\1/, "<strong><em>$2</em></strong>");
-            text = text.replace(/(\*{2})(.+?)\1/, "<strong>$2</strong>");
-            text = text.replace(/(\*)(.+?)\1/, "<em>$2</em>");
-            text = text.replace(/(\s+)(_{3})(.+?)\2(\s+)/, "$1<strong><em>$3</em></strong>$4");
-            text = text.replace(/(\s+)(_{2})(.+?)\2(\s+)/, "$1<strong>$3</strong>$4");
-            text = text.replace(/(\s+)(_)(.+?)\2(\s+)/, "$1<em>$3</em>$4");
-            text = text.replace(/(~{2})(.+?)\1/, "<del>$2</del>");
-            text = text.replace(/<(https?:\/\/.+)>/i, "<a href=\"$1\">$1</a>");
-            text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i, "<a href=\"mailto:$1\">$1</a>");
+            text = text.replace(/(\*{3})(.+?)\1/g, "<strong><em>$2</em></strong>");
+            text = text.replace(/(\*{2})(.+?)\1/g, "<strong>$2</strong>");
+            text = text.replace(/(\*)(.+?)\1/g, "<em>$2</em>");
+            text = text.replace(/(\s+)(_{3})(.+?)\2(\s+)/g, "$1<strong><em>$3</em></strong>$4");
+            text = text.replace(/(\s+)(_{2})(.+?)\2(\s+)/g, "$1<strong>$3</strong>$4");
+            text = text.replace(/(\s+)(_)(.+?)\2(\s+)/g, "$1<em>$3</em>$4");
+            text = text.replace(/(~{2})(.+?)\1/g, "<del>$2</del>");
+            text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, "<a href=\"mailto:$1\">$1</a>");
 
             // autolink url
-            text = text.replace(/(^|[^"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,]+)($|[^"])/i, "$1<a href=\"$2\">$2</a>$4");
+            text = text.replace(/(^|[^"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,]+)($|[^"])/ig, "$1<a href=\"$2\">$2</a>$4");
 
             text = this.call('afterParseInlineBeforeRelease', text);
 
@@ -414,7 +422,7 @@ var Parser = (function () {
 
                     // footnote
                     case /^\[\^((?:[^\]]|\]|\[)+?)\]:/.test(line):
-                        var footnoteMatches = line.match(/^\[\^((?:[^\]]|\]|\[)+?)\]:/);
+                        var footnoteMatches = /^\[\^((?:[^\]]|\]|\[)+?)\]:/.exec(line);
                         var footnoteSpace = footnoteMatches[0].length - 1;
                         this.startBlock('footnote', key, [footnoteSpace, footnoteMatches[1]]);
                         break;
@@ -625,7 +633,7 @@ var Parser = (function () {
 
                 if ('normal' === type) {
                     // combine two splitted list
-                    if (from === to && lines[from].match(/^\s*$/) && prevBlock.length && nextBlock.length) {
+                    if (from === to && lines[from].match(/^\s*$/) && prevBlock && nextBlock) {
                         if (prevBlock[0] === 'list' && nextBlock[0] === 'list') {
                             // combine 3 blocks
                             blocks[key - 1] = ['list', prevBlock[1], nextBlock[2], null];
@@ -897,7 +905,7 @@ var Parser = (function () {
     }, {
         key: 'parseTable',
         value: function parseTable(lines, value) {
-            var _this2 = this;
+            var _this3 = this;
 
             var _value = _slicedToArray(value, 2);
 
@@ -976,7 +984,7 @@ var Parser = (function () {
                         html += ' align="' + aligns[key] + '"';
                     }
 
-                    html += '>' + _this2.parseInline(text) + ('</' + tag + '>');
+                    html += '>' + _this3.parseInline(text) + ('</' + tag + '>');
                 });
 
                 html += '</tr>';
@@ -1022,15 +1030,15 @@ var Parser = (function () {
     }, {
         key: 'parseNormal',
         value: function parseNormal(lines) {
-            var _this3 = this;
+            var _this4 = this;
 
             lines = lines.map(function (line) {
-                return _this3.parseInline(line);
+                return _this4.parseInline(line);
             });
 
             var str = lines.join("\n").trim();
-            str = str.replace(/(\n\s*){2,}/, "</p><p>");
-            str = str.replace(/\n/, "<br>");
+            str = str.replace(/(\n\s*){2,}/g, "</p><p>");
+            str = str.replace(/\n/g, "<br>");
 
             return (/^\s*$/.test(str) ? '' : '<p>' + str + '</p>'
             );
@@ -1052,8 +1060,7 @@ var Parser = (function () {
             var note = _value2[1];
 
             var index = this.footnotes.indexOf(note);
-
-            if (false !== index) {
+            if (-1 !== index) {
                 if (lines[0]) {
                     lines[0] = lines[0].replace(/^\[\^((?:[^\]]|\]|\[)+?)\]:/, '');
                 }
@@ -1120,10 +1127,10 @@ var Parser = (function () {
         key: 'escapeBracket',
         value: function escapeBracket(str) {
             if (str) {
-                str = str.replace('\[', '[');
-                str = str.replace('\]', ']');
-                str = str.replace('\(', '(');
-                str = str.replace('\)', ')');
+                str = str.replace(/\[/g, '[');
+                str = str.replace(/\]/g, ']');
+                str = str.replace(/\(/g, '(');
+                str = str.replace(/\)/g, ')');
                 return str;
             }
         }

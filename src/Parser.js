@@ -62,8 +62,8 @@ export default class Parser {
      */
     initText (text) {
         if(text) {
-            text = text.replace('\t', '    ')
-            text = text.replace('\r', '')
+            text = text.replace(/\t/g, '    ')
+            text = text.replace(/\r/g, '')
         } else {
             text = ''
         }
@@ -90,6 +90,7 @@ export default class Parser {
                 html += `<li id="fn-${index}">${val}</li>`
 
                 index++
+                val = this.footnotes.pop()
             }
             html += '</ol></div>'
         }
@@ -171,14 +172,20 @@ export default class Parser {
      */
     parseInline (text, whiteList = '') {
         text = this.call('beforeParseInline', text)
-
+        let _this = this
         // code
-        let codeMatches = /(^|[^\\])`(.+?)`/.exec(text)
-        if (codeMatches) {
-            text = codeMatches[1] + this.makeHolder('<code>' + this.htmlspecialchars(codeMatches[2]) + '</code>')
-        }
+        text = text.replace(/(^|[^\\])(`+)(.+?)\2/g, () => {
+            let codeMatches = /(^|[^\\])(`+)(.+?)\2/g.exec(text)
+            return codeMatches[1] + _this.makeHolder('<code>' + _this.htmlspecialchars(codeMatches[3]) + '</code>')
+        })
 
-        // escape unsafe tags
+        // link
+        text = text.replace(/<(https?:\/\/.+)>/ig, () => {
+            let linkMatches = /<(https?:\/\/.+)>/ig.exec(text)
+            return `<a href="${linkMatches[1]}">${linkMatches[1]}</a>`
+        })
+
+        // encode unsafe tags
         let unsafeTagMatches = /<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i.exec(text)
         if (unsafeTagMatches) {
             let whiteLists = this.commonWhiteList + '|' + whiteList
@@ -189,85 +196,86 @@ export default class Parser {
             }
         }
 
-        text = text.replace('<', '&lt;')
-        text = text.replace('>', '&gt;')
+        text = text.replace(/</g, '&lt;')
+        text = text.replace(/>/g, '&gt;')
 
-        let footnotePattern = /\[\^((?:[^\]]|\]|\[)+?)\]/
-        let footnoteMatches = footnotePattern.exec(text)
-        if(footnoteMatches) {
-            let id = this.footnotes.indexOf(footnoteMatches[1])
+        // footnote
+        let footnotePattern = /\[\^((?:[^\]]|\]|\[)+?)\]/g
+
+        text = text.replace(footnotePattern, () => {
+            let footnoteMatches = text.match(footnoteMatches)
+            let id = _this.footnotes.indexOf(footnoteMatches[1])
 
             if (id === -1) {
-                id = this.footnotes.length + 1
-                this.footnotes[id] = footnoteMatches[1]
+                id = _this.footnotes.length + 1
+                _this.footnotes[id] = footnoteMatches[1]
             }
 
-            text = this.makeHolder(`<sup id="fnref-${id}"><a href="#fn-${id}" class="footnote-ref">${id}</a></sup>`)
-        }
+            return _this.makeHolder(`<sup id="fnref-${id}"><a href="#fn-${id}" class="footnote-ref">${id}</a></sup>`)
+        })
 
         // image
         let imagePattern1 = /!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/
         let imageMatches1 = imagePattern1.exec(text)
-        if (imageMatches1) {
-            let escaped = this.escapeBracket(imageMatches1[1])
-            let url = this.escapeBracket(imageMatches1[2])
-            text = this.makeHolder(`<img src="${url}" alt="${escaped}" title="${escaped}">`)
-        }
+        text = text.replace(imagePattern1, () => {
+            let escaped = _this.escapeBracket(imageMatches1[1])
+            let url = _this.escapeBracket(imageMatches1[2])
+            return _this.makeHolder(`<img src="${url}" alt="${escaped}" title="${escaped}">`)
+        })
 
         let imagePattern2 = /!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]/
         let imageMatches2 = imagePattern2.exec(text)
-        if(imageMatches2) {
-            let escaped = this.escapeBracket(imageMatches2[1])
+        text = text.replace(imagePattern2, () => {
+            let escaped = _this.escapeBracket(imageMatches2[1])
             let result = ''
-            if(this.definitions[imageMatches2[2]]) {
-                result = `<img src="${this.definitions[imageMatches2[2]]}" alt="${escaped}" title="${escaped}">`
+            if(_this.definitions[imageMatches2[2]]) {
+                result = `<img src="${_this.definitions[imageMatches2[2]]}" alt="${escaped}" title="${escaped}">`
             } else {
                 result = escaped
             }
-            text = this.makeHolder(result)
-        }
+            return _this.makeHolder(result)
+        })
 
         // link
         let linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/
         let linkMatches1 = linkPattern1.exec(text)
 
-        if(linkMatches1) {
-            let escaped = this.escapeBracket(linkMatches1[1])
-            let url = this.escapeBracket(linkMatches1[2])
-            text = this.makeHolder(`<a href="${url}">${escaped}</a>`)
-        }
+        text = text.replace(linkPattern1, () => {
+            let escaped = _this.escapeBracket(linkMatches1[1])
+            let url = _this.escapeBracket(linkMatches1[2])
+            return _this.makeHolder(`<a href="${url}">${escaped}</a>`)
+        })
 
         let linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/
         let linkMatches2 = linkPattern2.exec(text)
-        if(linkMatches2) {
-            let escaped = this.escapeBracket(linkMatches2[1])
+        text = text.replace(linkPattern2, () => {
+            let escaped = _this.escapeBracket(linkMatches2[1])
 
-            let result = this.definitions[linkMatches2[2]] ?
-                `<a href="${this.definitions[linkMatches2[2]]}">${escaped}</a>`
+            let result = _this.definitions[linkMatches2[2]] ?
+                `<a href="${_this.definitions[linkMatches2[2]]}">${escaped}</a>`
                 : escaped
 
-            text = this.makeHolder(result)
-        }
+            return _this.makeHolder(result)
+        })
 
         // escape
-        let escapeMatches = /\\(`|\*|_|~)/.exec(text)
-        if (escapeMatches) {
-            text = this.makeHolder(this.htmlspecialchars(escapeMatches[1]))
-        }
+        text = text.replace(/\\(`|\*|_|~)/, () => {
+            let escapeMatches = /\\(`|\*|_|~)/.exec(text)
+            return _this.makeHolder(_this.htmlspecialchars(escapeMatches[1]))
+        })
 
         // strong and em and some fuck
-        text = text.replace(/(\*{3})(.+?)\1/, "<strong><em>$2</em></strong>")
-        text = text.replace(/(\*{2})(.+?)\1/, "<strong>$2</strong>")
-        text = text.replace(/(\*)(.+?)\1/, "<em>$2</em>")
-        text = text.replace(/(\s+)(_{3})(.+?)\2(\s+)/, "$1<strong><em>$3</em></strong>$4")
-        text = text.replace(/(\s+)(_{2})(.+?)\2(\s+)/, "$1<strong>$3</strong>$4")
-        text = text.replace(/(\s+)(_)(.+?)\2(\s+)/, "$1<em>$3</em>$4")
-        text = text.replace(/(~{2})(.+?)\1/, "<del>$2</del>")
-        text = text.replace(/<(https?:\/\/.+)>/i, "<a href=\"$1\">$1</a>")
-        text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i, "<a href=\"mailto:$1\">$1</a>")
+        text = text.replace(/(\*{3})(.+?)\1/g, "<strong><em>$2</em></strong>")
+        text = text.replace(/(\*{2})(.+?)\1/g, "<strong>$2</strong>")
+        text = text.replace(/(\*)(.+?)\1/g, "<em>$2</em>")
+        text = text.replace(/(\s+)(_{3})(.+?)\2(\s+)/g, "$1<strong><em>$3</em></strong>$4")
+        text = text.replace(/(\s+)(_{2})(.+?)\2(\s+)/g, "$1<strong>$3</strong>$4")
+        text = text.replace(/(\s+)(_)(.+?)\2(\s+)/g, "$1<em>$3</em>$4")
+        text = text.replace(/(~{2})(.+?)\1/g, "<del>$2</del>")
+        text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, "<a href=\"mailto:$1\">$1</a>")
 
         // autolink url
-        text = text.replace(/(^|[^"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,]+)($|[^"])/i,
+        text = text.replace(/(^|[^"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,]+)($|[^"])/ig,
             "$1<a href=\"$2\">$2</a>$4")
 
         text = this.call('afterParseInlineBeforeRelease', text);
@@ -368,7 +376,7 @@ export default class Parser {
 
                 // footnote
                 case /^\[\^((?:[^\]]|\]|\[)+?)\]:/.test(line):
-                    let footnoteMatches = line.match(/^\[\^((?:[^\]]|\]|\[)+?)\]:/)
+                    let footnoteMatches = /^\[\^((?:[^\]]|\]|\[)+?)\]:/.exec(line)
                     let footnoteSpace = footnoteMatches[0].length - 1
                     this.startBlock('footnote', key, [footnoteSpace, footnoteMatches[1]])
                     break
@@ -556,7 +564,7 @@ export default class Parser {
             if ('normal' === type) {
                 // combine two splitted list
                 if (from === to && lines[from].match(/^\s*$/)
-                    && prevBlock.length && nextBlock.length) {
+                    && prevBlock && nextBlock) {
                     if (prevBlock[0] === 'list' && nextBlock[0] === 'list') {
                         // combine 3 blocks
                         blocks[key - 1] = ['list', prevBlock[1], nextBlock[2], null]
@@ -847,8 +855,8 @@ export default class Parser {
         })
 
         let str = lines.join("\n").trim()
-        str = str.replace(/(\n\s*){2,}/, "</p><p>")
-        str = str.replace(/\n/, "<br>")
+        str = str.replace(/(\n\s*){2,}/g, "</p><p>")
+        str = str.replace(/\n/g, "<br>")
 
         return /^\s*$/.test(str) ? '' : `<p>${str}</p>`
     }
@@ -863,8 +871,7 @@ export default class Parser {
     parseFootnote(lines, value) {
         let [space, note] = value
         let index = this.footnotes.indexOf(note)
-
-        if (false !== index) {
+        if (-1 !== index) {
             if(lines[0]) {
                 lines[0] = lines[0].replace(/^\[\^((?:[^\]]|\]|\[)+?)\]:/, '')
             }
@@ -905,10 +912,10 @@ export default class Parser {
      */
     escapeBracket(str) {
         if (str) {
-            str = str.replace('\[', '[')
-            str = str.replace('\]', ']')
-            str = str.replace('\(', '(')
-            str = str.replace('\)', ')')
+            str = str.replace(/\[/g, '[')
+            str = str.replace(/\]/g, ']')
+            str = str.replace(/\(/g, '(')
+            str = str.replace(/\)/g, ')')
             return str
         }
     }
