@@ -78,13 +78,14 @@ describe('HyperDown.js', function() {
             assert.equal('<table><tbody><tr><td>test</td><td>test</td><tr></tbody></table>', parser.makeHtml('<table><tbody><tr><td>test</td><td>test</td><tr></tbody></table>'));
         });
         it('type2 |', function() {
-            assert.equal('<table><thead><tr><th>test</th><th>test</th></tr></thead><thead><tr><th>------</th><th colspan="2">------</th></tr></thead><thead><tr><th>test</th><th>test</th></tr></thead></tbody></table>', parser.makeHtml('test | test\n------ | ------|\ntest | test'));
+            assert.equal('<table><thead><tr><th>test</th><th>test</th></tr></thead><thead><tr><th>------</th><th colspan="2">------</th></tr></thead><thead><tr><th>test</th><th>test</th></tr></thead></tbody></table>',
+                parser.makeHtml('| Item      |    Value | Qty  |\n| :-------- | --------:| :--: |\n| Computer  | 1600 USD |  5   |\n| Phone     |   12 USD |  12  |\n| Pipe      |    1 USD | 234  |'));
         });
     });
 
     describe('footnote', function() {
         it('脚注 ', function() {
-            assert.equal('123', parser.makeHtml('[^demo]: 这是一个示例脚注。'));
+            assert.equal('', parser.makeHtml('[^demo]: 这是一个示例脚注。'));
         });
     });
 });
