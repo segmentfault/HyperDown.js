@@ -85,7 +85,15 @@ describe('HyperDown.js', function() {
 
     describe('footnote', function() {
         it('脚注 ', function() {
-            assert.equal('', parser.makeHtml('[^demo]: 这是一个示例脚注。'));
+            var footnote = 'Never write "[click here][^2]".\n [^2]: http://www.w3.org/QA/Tips/noClickHere';
+            assert.equal('demo', parser.makeHtml(footnote));
+        });
+    });
+
+    describe('complex', function() {
+        it('list + code', function() {
+            var codeInList = "1. 如下代码片段中的空检查是否有意义？\n Question * q = new Question;\n    if (q == NULL ) {\n    }\n    从上面我们了解到，\`operator new\` 在分配内存失败的情况下会调用 \`new_handler\` 尝试让系统释放点内存，然后再次尝试申请内存。如果这时系统中内存确实紧张，即使调用。";
+            assert.equal('', parser.makeHtml(codeInList));
         });
     });
 });

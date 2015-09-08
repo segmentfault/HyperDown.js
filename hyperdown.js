@@ -111,7 +111,11 @@
 	    }, {
 	        key: 'hook',
 	        value: function hook(type, callback) {
-	            this.hooks[type].push(callback);
+	            if (this.hooks[type]) {
+	                this.hooks[type].push(callback);
+	            } else {
+	                this.hooks[type] = [callback];
+	            }
 	        }
 
 	        /**
@@ -399,7 +403,7 @@
 	            var emptyCount = 0;
 	            // analyze by line
 	            for (var key in lines) {
-	                key = parseInt(key); // ES6 的 bug for key in Array 循环时返回的 key 是字符串，不是 int
+	                key = parseInt(key); // ES6 的 for key in Array 循环时返回的 key 是字符串，不是 int
 	                var line = lines[key];
 	                // code block is special
 	                if (matches = line.match(/^(\s*)(~|`){3,}([^`~]*)$/i)) {
@@ -492,6 +496,7 @@
 	                    // pre
 	                    case /^ {4}/.test(line):
 	                        emptyCount = 0;
+
 	                        if (this.isBlock('pre')) {
 	                            this.setBlock(key);
 	                        } else if (this.isBlock('normal')) {
@@ -733,31 +738,11 @@
 	    }, {
 	        key: 'parsePre',
 	        value: function parsePre(lines) {
-	            var _iteratorNormalCompletion2 = true;
-	            var _didIteratorError2 = false;
-	            var _iteratorError2 = undefined;
+	            var _this3 = this;
 
-	            try {
-	                for (var _iterator2 = lines[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-	                    var line = _step2.value;
-
-	                    line = this.htmlspecialchars(line.substr(4));
-	                }
-	            } catch (err) {
-	                _didIteratorError2 = true;
-	                _iteratorError2 = err;
-	            } finally {
-	                try {
-	                    if (!_iteratorNormalCompletion2 && _iterator2['return']) {
-	                        _iterator2['return']();
-	                    }
-	                } finally {
-	                    if (_didIteratorError2) {
-	                        throw _iteratorError2;
-	                    }
-	                }
-	            }
-
+	            lines.forEach(function (line, ind) {
+	                lines[ind] = _this3.htmlspecialchars(line.substr(4));
+	            });
 	            var str = lines.join('\n');
 
 	            return (/^\s*$/.test(str) ? '' : '<pre><code>' + str + '</code></pre>'
@@ -828,6 +813,8 @@
 	    }, {
 	        key: 'parseList',
 	        value: function parseList(lines) {
+	            var _this4 = this;
+
 	            var html = '';
 	            var minSpace = 99999;
 	            var rows = [];
@@ -848,93 +835,50 @@
 
 	            var found = false;
 	            var secondMinSpace = 99999;
-	            var _iteratorNormalCompletion3 = true;
-	            var _didIteratorError3 = false;
-	            var _iteratorError3 = undefined;
-
-	            try {
-	                for (var _iterator3 = rows[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-	                    var row = _step3.value;
-
-	                    if (Array.isArray(row) && row[0] != minSpace) {
-	                        secondMinSpace = Math.min(secondMinSpace, row[0]);
-	                        found = true;
-	                    }
+	            rows.forEach(function (row) {
+	                if (Array.isArray(row) && row[0] != minSpace) {
+	                    secondMinSpace = Math.min(secondMinSpace, row[0]);
+	                    found = true;
 	                }
-	            } catch (err) {
-	                _didIteratorError3 = true;
-	                _iteratorError3 = err;
-	            } finally {
-	                try {
-	                    if (!_iteratorNormalCompletion3 && _iterator3['return']) {
-	                        _iterator3['return']();
-	                    }
-	                } finally {
-	                    if (_didIteratorError3) {
-	                        throw _iteratorError3;
-	                    }
-	                }
-	            }
-
+	            });
 	            secondMinSpace = found ? 0 : minSpace;
 
 	            var lastType = '';
 	            var leftLines = [];
 
-	            var _iteratorNormalCompletion4 = true;
-	            var _didIteratorError4 = false;
-	            var _iteratorError4 = undefined;
+	            rows.forEach(function (row) {
+	                if (Array.isArray(row)) {
+	                    var _row = _slicedToArray(row, 4);
 
-	            try {
-	                for (var _iterator4 = rows[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-	                    var row = _step4.value;
+	                    var space = _row[0];
+	                    var type = _row[1];
+	                    var line = _row[2];
+	                    var text = _row[3];
 
-	                    if (Array.isArray(row)) {
-	                        var _row = _slicedToArray(row, 4);
-
-	                        var space = _row[0];
-	                        var type = _row[1];
-	                        var line = _row[2];
-	                        var text = _row[3];
-
-	                        if (space !== minSpace) {
-	                            var pattern = new RegExp("^\s{" + secondMinSpace + "}");
-	                            leftLines.push(line.replace(pattern, ''));
-	                        } else {
-	                            if (lastType !== type) {
-	                                if (lastType.length) {
-	                                    html += '</' + lastType + '>';
-	                                }
-
-	                                html += '<' + type + '>';
-	                            }
-
-	                            if (leftLines.length) {
-	                                html += "<li>" + this.parse(leftLines.join("\n")) + "</li>";
-	                            }
-
-	                            leftLines = [text];
-	                            lastType = type;
-	                        }
-	                    } else {
+	                    if (space !== minSpace) {
 	                        var pattern = new RegExp("^\s{" + secondMinSpace + "}");
-	                        leftLines.push(row.replace(pattern, ''));
+	                        leftLines.push(line.replace(pattern, ''));
+	                    } else {
+	                        if (lastType !== type) {
+	                            if (lastType.length) {
+	                                html += '</' + lastType + '>';
+	                            }
+
+	                            html += '<' + type + '>';
+	                        }
+
+	                        if (leftLines.length) {
+	                            html += "<li>" + _this4.parse(leftLines.join("\n")) + "</li>";
+	                        }
+
+	                        leftLines = [text];
+	                        lastType = type;
 	                    }
+	                } else {
+	                    var pattern = new RegExp("^\s{" + secondMinSpace + "}");
+	                    leftLines.push(row.replace(pattern, ''));
 	                }
-	            } catch (err) {
-	                _didIteratorError4 = true;
-	                _iteratorError4 = err;
-	            } finally {
-	                try {
-	                    if (!_iteratorNormalCompletion4 && _iterator4['return']) {
-	                        _iterator4['return']();
-	                    }
-	                } finally {
-	                    if (_didIteratorError4) {
-	                        throw _iteratorError4;
-	                    }
-	                }
-	            }
+	            });
 
 	            if (leftLines.length) {
 	                html += "<li>" + this.parse(leftLines.join("\n")) + ('</li></' + lastType + '>');
@@ -951,7 +895,7 @@
 	    }, {
 	        key: 'parseTable',
 	        value: function parseTable(lines, value) {
-	            var _this3 = this;
+	            var _this5 = this;
 
 	            var _value = _slicedToArray(value, 2);
 
@@ -1030,7 +974,7 @@
 	                        html += ' align="' + aligns[key] + '"';
 	                    }
 
-	                    html += '>' + _this3.parseInline(text) + ('</' + tag + '>');
+	                    html += '>' + _this5.parseInline(text) + ('</' + tag + '>');
 	                });
 
 	                html += '</tr>';
@@ -1076,10 +1020,10 @@
 	    }, {
 	        key: 'parseNormal',
 	        value: function parseNormal(lines) {
-	            var _this4 = this;
+	            var _this6 = this;
 
 	            lines = lines.map(function (line) {
-	                return _this4.parseInline(line);
+	                return _this6.parseInline(line);
 	            });
 
 	            var str = lines.join("\n").trim();
@@ -1137,30 +1081,11 @@
 	    }, {
 	        key: 'parseHtml',
 	        value: function parseHtml(lines, type) {
-	            var _iteratorNormalCompletion5 = true;
-	            var _didIteratorError5 = false;
-	            var _iteratorError5 = undefined;
+	            var _this7 = this;
 
-	            try {
-	                for (var _iterator5 = lines[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-	                    var line = _step5.value;
-
-	                    line = this.parseInline(line, this.specialWhiteList[type] ? this.specialWhiteList[type] : '');
-	                }
-	            } catch (err) {
-	                _didIteratorError5 = true;
-	                _iteratorError5 = err;
-	            } finally {
-	                try {
-	                    if (!_iteratorNormalCompletion5 && _iterator5['return']) {
-	                        _iterator5['return']();
-	                    }
-	                } finally {
-	                    if (_didIteratorError5) {
-	                        throw _iteratorError5;
-	                    }
-	                }
-	            }
+	            lines.forEach(function (line) {
+	                line = _this7.parseInline(line, _this7.specialWhiteList[type] ? _this7.specialWhiteList[type] : '');
+	            });
 
 	            return lines.join("\n");
 	        }
@@ -1331,7 +1256,7 @@
 	            prev[2] = current[2];
 	            this.blocks[this.pos - 1] = prev;
 	            this.current = prev[0];
-	            unset(this.blocks[this.pos]);
+	            this.blocks.splice(this.pos, 1);
 	            this.pos--;
 
 	            return this;

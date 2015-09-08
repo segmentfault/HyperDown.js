@@ -42,7 +42,11 @@ export default class Parser {
      * @param callback
      */
     hook (type, callback) {
-        this.hooks[type].push(callback)
+        if(this.hooks[type]) {
+            this.hooks[type].push(callback)
+        } else {
+            this.hooks[type] = [callback]
+        }
     }
 
     /**
@@ -303,7 +307,7 @@ export default class Parser {
         let emptyCount = 0
         // analyze by line
         for (let key in lines) {
-            key = parseInt(key) // ES6 的 bug for key in Array 循环时返回的 key 是字符串，不是 int
+            key = parseInt(key) // ES6 的 for key in Array 循环时返回的 key 是字符串，不是 int
             let line = lines[key]
             // code block is special
             if (matches = line.match(/^(\s*)(~|`){3,}([^`~]*)$/i)) {
@@ -313,7 +317,7 @@ export default class Parser {
 
                     if (isAfterList) {
                         this.combineBlock()
-                            .setBlock(key);
+                            .setBlock(key)
                     } else {
                         this.setBlock(key)
                             .endBlock()
@@ -401,6 +405,7 @@ export default class Parser {
                 // pre
                 case /^ {4}/.test(line):
                     emptyCount = 0
+
                     if (this.isBlock('pre')) {
                         this.setBlock(key)
                     } else if (this.isBlock('normal')) {
@@ -611,12 +616,12 @@ export default class Parser {
      * @return string
      */
     parsePre(lines) {
-        for (let line of lines) {
-            line = this.htmlspecialchars(line.substr(4))
-        }
+        lines.forEach( (line, ind) => {
+            lines[ind] = this.htmlspecialchars(line.substr(4))
+        })
         let str = lines.join('\n')
 
-        return /^\s*$/.test(str) ? '' : '<pre><code>' + str + '</code></pre>';
+        return /^\s*$/.test(str) ? '' : '<pre><code>' + str + '</code></pre>'
     }
 
     /**
@@ -692,18 +697,18 @@ export default class Parser {
 
         let found = false
         let secondMinSpace = 99999
-        for (let row of rows) {
+        rows.forEach( row => {
             if (Array.isArray(row) && row[0] != minSpace) {
                 secondMinSpace = Math.min(secondMinSpace, row[0])
                 found = true
             }
-        }
+        })
         secondMinSpace = found ? 0 : minSpace
 
         let lastType = ''
         let leftLines = []
 
-        for (let row of rows) {
+        rows.forEach( row => {
             if (Array.isArray(row)) {
                 let [space, type, line, text] = row
 
@@ -730,7 +735,7 @@ export default class Parser {
                 let pattern = new RegExp("^\s{" + secondMinSpace + "}")
                 leftLines.push(row.replace(pattern, ''))
             }
-        }
+        })
 
         if (leftLines.length) {
             html += "<li>" + this.parse(leftLines.join("\n")) + `</li></${lastType}>`
@@ -898,10 +903,10 @@ export default class Parser {
      * @return string
      */
     parseHtml(lines, type) {
-        for (let line of lines) {
+        lines.forEach(line => {
             line = this.parseInline(line,
                 this.specialWhiteList[type] ? this.specialWhiteList[type] : '')
-        }
+        })
 
         return lines.join("\n")
     }
@@ -1044,7 +1049,7 @@ export default class Parser {
         prev[2] = current[2]
         this.blocks[this.pos - 1] = prev
         this.current = prev[0]
-        unset(this.blocks[this.pos])
+        this.blocks.splice(this.pos, 1)
         this.pos--
 
         return this
