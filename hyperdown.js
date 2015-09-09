@@ -270,20 +270,20 @@
 	    }, {
 	        key: 'parseInline',
 	        value: function parseInline(text) {
+	            var _this3 = this;
+
 	            var whiteList = arguments.length <= 1 || arguments[1] === undefined ? '' : arguments[1];
 
 	            text = this.call('beforeParseInline', text);
 	            var _this = this;
 	            // code
-	            text = text.replace(/(^|[^\\])(`+)(.+?)\2/g, function () {
-	                var codeMatches = /(^|[^\\])(`+)(.+?)\2/g.exec(text);
-	                return codeMatches[1] + _this.makeHolder('<code>' + _this.htmlspecialchars(codeMatches[3]) + '</code>');
+	            text = text.replace(/(^|[^\\])(`+)(.+?)\2/g, function (match, p1, p2, p3) {
+	                return p1 + _this.makeHolder('<code>' + _this.htmlspecialchars(p3) + '</code>');
 	            });
 
 	            // link
-	            text = text.replace(/<(https?:\/\/.+)>/ig, function () {
-	                var linkMatches = /<(https?:\/\/.+)>/ig.exec(text);
-	                return '<a href="' + linkMatches[1] + '">' + linkMatches[1] + '</a>';
+	            text = text.replace(/<(https?:\/\/.+)>/ig, function (match, p1) {
+	                return '<a href="' + p1 + '">' + p1 + '</a>';
 	            });
 
 	            // encode unsafe tags
@@ -302,14 +302,12 @@
 
 	            // footnote
 	            var footnotePattern = /\[\^((?:[^\]]|\]|\[)+?)\]/g;
-
-	            text = text.replace(footnotePattern, function () {
-	                var footnoteMatches = text.match(footnoteMatches);
-	                var id = _this.footnotes.indexOf(footnoteMatches[1]);
+	            text = text.replace(footnotePattern, function (match, p1, p2) {
+	                var id = _this.footnotes.indexOf(p1);
 
 	                if (id === -1) {
 	                    id = _this.footnotes.length + 1;
-	                    _this.footnotes[id] = footnoteMatches[1];
+	                    _this.footnotes[id] = _this3.parseInline(p1);
 	                }
 
 	                return _this.makeHolder('<sup id="fnref-' + id + '"><a href="#fn-' + id + '" class="footnote-ref">' + id + '</a></sup>');
@@ -317,20 +315,18 @@
 
 	            // image
 	            var imagePattern1 = /!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/;
-	            var imageMatches1 = imagePattern1.exec(text);
-	            text = text.replace(imagePattern1, function () {
-	                var escaped = _this.escapeBracket(imageMatches1[1]);
-	                var url = _this.escapeBracket(imageMatches1[2]);
+	            text = text.replace(imagePattern1, function (match, p1, p2) {
+	                var escaped = _this.escapeBracket(p1);
+	                var url = _this.escapeBracket(p2);
 	                return _this.makeHolder('<img src="' + url + '" alt="' + escaped + '" title="' + escaped + '">');
 	            });
 
 	            var imagePattern2 = /!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]/;
-	            var imageMatches2 = imagePattern2.exec(text);
-	            text = text.replace(imagePattern2, function () {
-	                var escaped = _this.escapeBracket(imageMatches2[1]);
+	            text = text.replace(imagePattern2, function (match, p1, p2) {
+	                var escaped = _this.escapeBracket(p1);
 	                var result = '';
-	                if (_this.definitions[imageMatches2[2]]) {
-	                    result = '<img src="' + _this.definitions[imageMatches2[2]] + '" alt="' + escaped + '" title="' + escaped + '">';
+	                if (_this.definitions[p2]) {
+	                    result = '<img src="' + _this.definitions[p2] + '" alt="' + escaped + '" title="' + escaped + '">';
 	                } else {
 	                    result = escaped;
 	                }
@@ -339,28 +335,24 @@
 
 	            // link
 	            var linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/;
-	            var linkMatches1 = linkPattern1.exec(text);
-
-	            text = text.replace(linkPattern1, function () {
-	                var escaped = _this.escapeBracket(linkMatches1[1]);
-	                var url = _this.escapeBracket(linkMatches1[2]);
+	            text = text.replace(linkPattern1, function (match, p1, p2) {
+	                var escaped = _this.parseInline(_this.escapeBracket(p1));
+	                var url = _this.escapeBracket(p2);
 	                return _this.makeHolder('<a href="' + url + '">' + escaped + '</a>');
 	            });
 
 	            var linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/;
-	            var linkMatches2 = linkPattern2.exec(text);
-	            text = text.replace(linkPattern2, function () {
-	                var escaped = _this.escapeBracket(linkMatches2[1]);
+	            text = text.replace(linkPattern2, function (match, p1, p2) {
+	                var escaped = _this.parseInline(_this.escapeBracket(p1));
 
-	                var result = _this.definitions[linkMatches2[2]] ? '<a href="' + _this.definitions[linkMatches2[2]] + '">' + escaped + '</a>' : escaped;
+	                var result = _this.definitions[p2] ? '<a href="' + _this.definitions[p2] + '">' + escaped + '</a>' : escaped;
 
 	                return _this.makeHolder(result);
 	            });
 
 	            // escape
-	            text = text.replace(/\\(`|\*|_|~)/, function () {
-	                var escapeMatches = /\\(`|\*|_|~)/.exec(text);
-	                return _this.makeHolder(_this.htmlspecialchars(escapeMatches[1]));
+	            text = text.replace(/\\(`|\*|_|~)/g, function (match, p1) {
+	                return _this.makeHolder(_this.htmlspecialchars(p1));
 	            });
 
 	            // strong and em and some fuck
@@ -738,10 +730,10 @@
 	    }, {
 	        key: 'parsePre',
 	        value: function parsePre(lines) {
-	            var _this3 = this;
+	            var _this4 = this;
 
 	            lines.forEach(function (line, ind) {
-	                lines[ind] = _this3.htmlspecialchars(line.substr(4));
+	                lines[ind] = _this4.htmlspecialchars(line.substr(4));
 	            });
 	            var str = lines.join('\n');
 
@@ -813,7 +805,7 @@
 	    }, {
 	        key: 'parseList',
 	        value: function parseList(lines) {
-	            var _this4 = this;
+	            var _this5 = this;
 
 	            var html = '';
 	            var minSpace = 99999;
@@ -868,7 +860,7 @@
 	                        }
 
 	                        if (leftLines.length) {
-	                            html += "<li>" + _this4.parse(leftLines.join("\n")) + "</li>";
+	                            html += "<li>" + _this5.parse(leftLines.join("\n")) + "</li>";
 	                        }
 
 	                        leftLines = [text];
@@ -895,7 +887,7 @@
 	    }, {
 	        key: 'parseTable',
 	        value: function parseTable(lines, value) {
-	            var _this5 = this;
+	            var _this6 = this;
 
 	            var _value = _slicedToArray(value, 2);
 
@@ -974,7 +966,7 @@
 	                        html += ' align="' + aligns[key] + '"';
 	                    }
 
-	                    html += '>' + _this5.parseInline(text) + ('</' + tag + '>');
+	                    html += '>' + _this6.parseInline(text) + ('</' + tag + '>');
 	                });
 
 	                html += '</tr>';
@@ -1020,10 +1012,10 @@
 	    }, {
 	        key: 'parseNormal',
 	        value: function parseNormal(lines) {
-	            var _this6 = this;
+	            var _this7 = this;
 
 	            lines = lines.map(function (line) {
-	                return _this6.parseInline(line);
+	                return _this7.parseInline(line);
 	            });
 
 	            var str = lines.join("\n").trim();
@@ -1081,10 +1073,10 @@
 	    }, {
 	        key: 'parseHtml',
 	        value: function parseHtml(lines, type) {
-	            var _this7 = this;
+	            var _this8 = this;
 
 	            lines.forEach(function (line) {
-	                line = _this7.parseInline(line, _this7.specialWhiteList[type] ? _this7.specialWhiteList[type] : '');
+	                line = _this8.parseInline(line, _this8.specialWhiteList[type] ? _this8.specialWhiteList[type] : '');
 	            });
 
 	            return lines.join("\n");

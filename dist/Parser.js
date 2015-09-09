@@ -65,7 +65,11 @@ var Parser = (function () {
     }, {
         key: 'hook',
         value: function hook(type, callback) {
-            this.hooks[type].push(callback);
+            if (this.hooks[type]) {
+                this.hooks[type].push(callback);
+            } else {
+                this.hooks[type] = [callback];
+            }
         }
 
         /**
@@ -220,20 +224,20 @@ var Parser = (function () {
     }, {
         key: 'parseInline',
         value: function parseInline(text) {
+            var _this3 = this;
+
             var whiteList = arguments.length <= 1 || arguments[1] === undefined ? '' : arguments[1];
 
             text = this.call('beforeParseInline', text);
             var _this = this;
             // code
-            text = text.replace(/(^|[^\\])(`+)(.+?)\2/g, function () {
-                var codeMatches = /(^|[^\\])(`+)(.+?)\2/g.exec(text);
-                return codeMatches[1] + _this.makeHolder('<code>' + _this.htmlspecialchars(codeMatches[3]) + '</code>');
+            text = text.replace(/(^|[^\\])(`+)(.+?)\2/g, function (match, p1, p2, p3) {
+                return p1 + _this.makeHolder('<code>' + _this.htmlspecialchars(p3) + '</code>');
             });
 
             // link
-            text = text.replace(/<(https?:\/\/.+)>/ig, function () {
-                var linkMatches = /<(https?:\/\/.+)>/ig.exec(text);
-                return '<a href="' + linkMatches[1] + '">' + linkMatches[1] + '</a>';
+            text = text.replace(/<(https?:\/\/.+)>/ig, function (match, p1) {
+                return '<a href="' + p1 + '">' + p1 + '</a>';
             });
 
             // encode unsafe tags
@@ -252,14 +256,12 @@ var Parser = (function () {
 
             // footnote
             var footnotePattern = /\[\^((?:[^\]]|\]|\[)+?)\]/g;
-
-            text = text.replace(footnotePattern, function () {
-                var footnoteMatches = text.match(footnoteMatches);
-                var id = _this.footnotes.indexOf(footnoteMatches[1]);
+            text = text.replace(footnotePattern, function (match, p1, p2) {
+                var id = _this.footnotes.indexOf(p1);
 
                 if (id === -1) {
                     id = _this.footnotes.length + 1;
-                    _this.footnotes[id] = footnoteMatches[1];
+                    _this.footnotes[id] = _this3.parseInline(p1);
                 }
 
                 return _this.makeHolder('<sup id="fnref-' + id + '"><a href="#fn-' + id + '" class="footnote-ref">' + id + '</a></sup>');
@@ -267,20 +269,18 @@ var Parser = (function () {
 
             // image
             var imagePattern1 = /!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/;
-            var imageMatches1 = imagePattern1.exec(text);
-            text = text.replace(imagePattern1, function () {
-                var escaped = _this.escapeBracket(imageMatches1[1]);
-                var url = _this.escapeBracket(imageMatches1[2]);
+            text = text.replace(imagePattern1, function (match, p1, p2) {
+                var escaped = _this.escapeBracket(p1);
+                var url = _this.escapeBracket(p2);
                 return _this.makeHolder('<img src="' + url + '" alt="' + escaped + '" title="' + escaped + '">');
             });
 
             var imagePattern2 = /!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]/;
-            var imageMatches2 = imagePattern2.exec(text);
-            text = text.replace(imagePattern2, function () {
-                var escaped = _this.escapeBracket(imageMatches2[1]);
+            text = text.replace(imagePattern2, function (match, p1, p2) {
+                var escaped = _this.escapeBracket(p1);
                 var result = '';
-                if (_this.definitions[imageMatches2[2]]) {
-                    result = '<img src="' + _this.definitions[imageMatches2[2]] + '" alt="' + escaped + '" title="' + escaped + '">';
+                if (_this.definitions[p2]) {
+                    result = '<img src="' + _this.definitions[p2] + '" alt="' + escaped + '" title="' + escaped + '">';
                 } else {
                     result = escaped;
                 }
@@ -289,28 +289,24 @@ var Parser = (function () {
 
             // link
             var linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/;
-            var linkMatches1 = linkPattern1.exec(text);
-
-            text = text.replace(linkPattern1, function () {
-                var escaped = _this.escapeBracket(linkMatches1[1]);
-                var url = _this.escapeBracket(linkMatches1[2]);
+            text = text.replace(linkPattern1, function (match, p1, p2) {
+                var escaped = _this.parseInline(_this.escapeBracket(p1));
+                var url = _this.escapeBracket(p2);
                 return _this.makeHolder('<a href="' + url + '">' + escaped + '</a>');
             });
 
             var linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/;
-            var linkMatches2 = linkPattern2.exec(text);
-            text = text.replace(linkPattern2, function () {
-                var escaped = _this.escapeBracket(linkMatches2[1]);
+            text = text.replace(linkPattern2, function (match, p1, p2) {
+                var escaped = _this.parseInline(_this.escapeBracket(p1));
 
-                var result = _this.definitions[linkMatches2[2]] ? '<a href="' + _this.definitions[linkMatches2[2]] + '">' + escaped + '</a>' : escaped;
+                var result = _this.definitions[p2] ? '<a href="' + _this.definitions[p2] + '">' + escaped + '</a>' : escaped;
 
                 return _this.makeHolder(result);
             });
 
             // escape
-            text = text.replace(/\\(`|\*|_|~)/, function () {
-                var escapeMatches = /\\(`|\*|_|~)/.exec(text);
-                return _this.makeHolder(_this.htmlspecialchars(escapeMatches[1]));
+            text = text.replace(/\\(`|\*|_|~)/g, function (match, p1) {
+                return _this.makeHolder(_this.htmlspecialchars(p1));
             });
 
             // strong and em and some fuck
@@ -353,7 +349,7 @@ var Parser = (function () {
             var emptyCount = 0;
             // analyze by line
             for (var key in lines) {
-                key = parseInt(key); // ES6 的 bug for key in Array 循环时返回的 key 是字符串，不是 int
+                key = parseInt(key); // ES6 的 for key in Array 循环时返回的 key 是字符串，不是 int
                 var line = lines[key];
                 // code block is special
                 if (matches = line.match(/^(\s*)(~|`){3,}([^`~]*)$/i)) {
@@ -446,6 +442,7 @@ var Parser = (function () {
                     // pre
                     case /^ {4}/.test(line):
                         emptyCount = 0;
+
                         if (this.isBlock('pre')) {
                             this.setBlock(key);
                         } else if (this.isBlock('normal')) {
@@ -687,31 +684,11 @@ var Parser = (function () {
     }, {
         key: 'parsePre',
         value: function parsePre(lines) {
-            var _iteratorNormalCompletion2 = true;
-            var _didIteratorError2 = false;
-            var _iteratorError2 = undefined;
+            var _this4 = this;
 
-            try {
-                for (var _iterator2 = lines[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                    var line = _step2.value;
-
-                    line = this.htmlspecialchars(line.substr(4));
-                }
-            } catch (err) {
-                _didIteratorError2 = true;
-                _iteratorError2 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion2 && _iterator2['return']) {
-                        _iterator2['return']();
-                    }
-                } finally {
-                    if (_didIteratorError2) {
-                        throw _iteratorError2;
-                    }
-                }
-            }
-
+            lines.forEach(function (line, ind) {
+                lines[ind] = _this4.htmlspecialchars(line.substr(4));
+            });
             var str = lines.join('\n');
 
             return (/^\s*$/.test(str) ? '' : '<pre><code>' + str + '</code></pre>'
@@ -782,6 +759,8 @@ var Parser = (function () {
     }, {
         key: 'parseList',
         value: function parseList(lines) {
+            var _this5 = this;
+
             var html = '';
             var minSpace = 99999;
             var rows = [];
@@ -802,93 +781,50 @@ var Parser = (function () {
 
             var found = false;
             var secondMinSpace = 99999;
-            var _iteratorNormalCompletion3 = true;
-            var _didIteratorError3 = false;
-            var _iteratorError3 = undefined;
-
-            try {
-                for (var _iterator3 = rows[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                    var row = _step3.value;
-
-                    if (Array.isArray(row) && row[0] != minSpace) {
-                        secondMinSpace = Math.min(secondMinSpace, row[0]);
-                        found = true;
-                    }
+            rows.forEach(function (row) {
+                if (Array.isArray(row) && row[0] != minSpace) {
+                    secondMinSpace = Math.min(secondMinSpace, row[0]);
+                    found = true;
                 }
-            } catch (err) {
-                _didIteratorError3 = true;
-                _iteratorError3 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion3 && _iterator3['return']) {
-                        _iterator3['return']();
-                    }
-                } finally {
-                    if (_didIteratorError3) {
-                        throw _iteratorError3;
-                    }
-                }
-            }
-
+            });
             secondMinSpace = found ? 0 : minSpace;
 
             var lastType = '';
             var leftLines = [];
 
-            var _iteratorNormalCompletion4 = true;
-            var _didIteratorError4 = false;
-            var _iteratorError4 = undefined;
+            rows.forEach(function (row) {
+                if (Array.isArray(row)) {
+                    var _row = _slicedToArray(row, 4);
 
-            try {
-                for (var _iterator4 = rows[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                    var row = _step4.value;
+                    var space = _row[0];
+                    var type = _row[1];
+                    var line = _row[2];
+                    var text = _row[3];
 
-                    if (Array.isArray(row)) {
-                        var _row = _slicedToArray(row, 4);
-
-                        var space = _row[0];
-                        var type = _row[1];
-                        var line = _row[2];
-                        var text = _row[3];
-
-                        if (space !== minSpace) {
-                            var pattern = new RegExp("^\s{" + secondMinSpace + "}");
-                            leftLines.push(line.replace(pattern, ''));
-                        } else {
-                            if (lastType !== type) {
-                                if (lastType.length) {
-                                    html += '</' + lastType + '>';
-                                }
-
-                                html += '<' + type + '>';
-                            }
-
-                            if (leftLines.length) {
-                                html += "<li>" + this.parse(leftLines.join("\n")) + "</li>";
-                            }
-
-                            leftLines = [text];
-                            lastType = type;
-                        }
-                    } else {
+                    if (space !== minSpace) {
                         var pattern = new RegExp("^\s{" + secondMinSpace + "}");
-                        leftLines.push(row.replace(pattern, ''));
+                        leftLines.push(line.replace(pattern, ''));
+                    } else {
+                        if (lastType !== type) {
+                            if (lastType.length) {
+                                html += '</' + lastType + '>';
+                            }
+
+                            html += '<' + type + '>';
+                        }
+
+                        if (leftLines.length) {
+                            html += "<li>" + _this5.parse(leftLines.join("\n")) + "</li>";
+                        }
+
+                        leftLines = [text];
+                        lastType = type;
                     }
+                } else {
+                    var pattern = new RegExp("^\s{" + secondMinSpace + "}");
+                    leftLines.push(row.replace(pattern, ''));
                 }
-            } catch (err) {
-                _didIteratorError4 = true;
-                _iteratorError4 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion4 && _iterator4['return']) {
-                        _iterator4['return']();
-                    }
-                } finally {
-                    if (_didIteratorError4) {
-                        throw _iteratorError4;
-                    }
-                }
-            }
+            });
 
             if (leftLines.length) {
                 html += "<li>" + this.parse(leftLines.join("\n")) + ('</li></' + lastType + '>');
@@ -905,7 +841,7 @@ var Parser = (function () {
     }, {
         key: 'parseTable',
         value: function parseTable(lines, value) {
-            var _this3 = this;
+            var _this6 = this;
 
             var _value = _slicedToArray(value, 2);
 
@@ -984,7 +920,7 @@ var Parser = (function () {
                         html += ' align="' + aligns[key] + '"';
                     }
 
-                    html += '>' + _this3.parseInline(text) + ('</' + tag + '>');
+                    html += '>' + _this6.parseInline(text) + ('</' + tag + '>');
                 });
 
                 html += '</tr>';
@@ -1030,10 +966,10 @@ var Parser = (function () {
     }, {
         key: 'parseNormal',
         value: function parseNormal(lines) {
-            var _this4 = this;
+            var _this7 = this;
 
             lines = lines.map(function (line) {
-                return _this4.parseInline(line);
+                return _this7.parseInline(line);
             });
 
             var str = lines.join("\n").trim();
@@ -1091,30 +1027,11 @@ var Parser = (function () {
     }, {
         key: 'parseHtml',
         value: function parseHtml(lines, type) {
-            var _iteratorNormalCompletion5 = true;
-            var _didIteratorError5 = false;
-            var _iteratorError5 = undefined;
+            var _this8 = this;
 
-            try {
-                for (var _iterator5 = lines[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-                    var line = _step5.value;
-
-                    line = this.parseInline(line, this.specialWhiteList[type] ? this.specialWhiteList[type] : '');
-                }
-            } catch (err) {
-                _didIteratorError5 = true;
-                _iteratorError5 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion5 && _iterator5['return']) {
-                        _iterator5['return']();
-                    }
-                } finally {
-                    if (_didIteratorError5) {
-                        throw _iteratorError5;
-                    }
-                }
-            }
+            lines.forEach(function (line) {
+                line = _this8.parseInline(line, _this8.specialWhiteList[type] ? _this8.specialWhiteList[type] : '');
+            });
 
             return lines.join("\n");
         }
@@ -1285,7 +1202,7 @@ var Parser = (function () {
             prev[2] = current[2];
             this.blocks[this.pos - 1] = prev;
             this.current = prev[0];
-            unset(this.blocks[this.pos]);
+            this.blocks.splice(this.pos, 1);
             this.pos--;
 
             return this;

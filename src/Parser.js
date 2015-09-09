@@ -178,15 +178,13 @@ export default class Parser {
         text = this.call('beforeParseInline', text)
         let _this = this
         // code
-        text = text.replace(/(^|[^\\])(`+)(.+?)\2/g, () => {
-            let codeMatches = /(^|[^\\])(`+)(.+?)\2/g.exec(text)
-            return codeMatches[1] + _this.makeHolder('<code>' + _this.htmlspecialchars(codeMatches[3]) + '</code>')
+        text = text.replace(/(^|[^\\])(`+)(.+?)\2/g, (match, p1, p2, p3) => {
+            return p1 + _this.makeHolder('<code>' + _this.htmlspecialchars(p3) + '</code>')
         })
 
         // link
-        text = text.replace(/<(https?:\/\/.+)>/ig, () => {
-            let linkMatches = /<(https?:\/\/.+)>/ig.exec(text)
-            return `<a href="${linkMatches[1]}">${linkMatches[1]}</a>`
+        text = text.replace(/<(https?:\/\/.+)>/ig, (match, p1) => {
+            return `<a href="${p1}">${p1}</a>`
         })
 
         // encode unsafe tags
@@ -205,14 +203,12 @@ export default class Parser {
 
         // footnote
         let footnotePattern = /\[\^((?:[^\]]|\]|\[)+?)\]/g
-
-        text = text.replace(footnotePattern, () => {
-            let footnoteMatches = text.match(footnoteMatches)
-            let id = _this.footnotes.indexOf(footnoteMatches[1])
+        text = text.replace(footnotePattern, (match, p1, p2) => {
+            let id = _this.footnotes.indexOf(p1)
 
             if (id === -1) {
                 id = _this.footnotes.length + 1
-                _this.footnotes[id] = footnoteMatches[1]
+                _this.footnotes[id] = this.parseInline(p1)
             }
 
             return _this.makeHolder(`<sup id="fnref-${id}"><a href="#fn-${id}" class="footnote-ref">${id}</a></sup>`)
@@ -220,20 +216,18 @@ export default class Parser {
 
         // image
         let imagePattern1 = /!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/
-        let imageMatches1 = imagePattern1.exec(text)
-        text = text.replace(imagePattern1, () => {
-            let escaped = _this.escapeBracket(imageMatches1[1])
-            let url = _this.escapeBracket(imageMatches1[2])
+        text = text.replace(imagePattern1, (match, p1, p2) => {
+            let escaped = _this.escapeBracket(p1)
+            let url = _this.escapeBracket(p2)
             return _this.makeHolder(`<img src="${url}" alt="${escaped}" title="${escaped}">`)
         })
 
         let imagePattern2 = /!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]/
-        let imageMatches2 = imagePattern2.exec(text)
-        text = text.replace(imagePattern2, () => {
-            let escaped = _this.escapeBracket(imageMatches2[1])
+        text = text.replace(imagePattern2, (match, p1, p2) => {
+            let escaped = _this.escapeBracket(p1)
             let result = ''
-            if(_this.definitions[imageMatches2[2]]) {
-                result = `<img src="${_this.definitions[imageMatches2[2]]}" alt="${escaped}" title="${escaped}">`
+            if(_this.definitions[p2]) {
+                result = `<img src="${_this.definitions[p2]}" alt="${escaped}" title="${escaped}">`
             } else {
                 result = escaped
             }
@@ -242,30 +236,26 @@ export default class Parser {
 
         // link
         let linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/
-        let linkMatches1 = linkPattern1.exec(text)
-
-        text = text.replace(linkPattern1, () => {
-            let escaped = _this.escapeBracket(linkMatches1[1])
-            let url = _this.escapeBracket(linkMatches1[2])
+        text = text.replace(linkPattern1, (match, p1, p2) => {
+            let escaped = _this.parseInline(_this.escapeBracket(p1))
+            let url = _this.escapeBracket(p2)
             return _this.makeHolder(`<a href="${url}">${escaped}</a>`)
         })
 
         let linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/
-        let linkMatches2 = linkPattern2.exec(text)
-        text = text.replace(linkPattern2, () => {
-            let escaped = _this.escapeBracket(linkMatches2[1])
+        text = text.replace(linkPattern2, (match, p1, p2) => {
+            let escaped = _this.parseInline(_this.escapeBracket(p1))
 
-            let result = _this.definitions[linkMatches2[2]] ?
-                `<a href="${_this.definitions[linkMatches2[2]]}">${escaped}</a>`
+            let result = _this.definitions[p2] ?
+                `<a href="${_this.definitions[p2]}">${escaped}</a>`
                 : escaped
 
             return _this.makeHolder(result)
         })
 
         // escape
-        text = text.replace(/\\(`|\*|_|~)/, () => {
-            let escapeMatches = /\\(`|\*|_|~)/.exec(text)
-            return _this.makeHolder(_this.htmlspecialchars(escapeMatches[1]))
+        text = text.replace(/\\(`|\*|_|~)/g, (match, p1) => {
+            return _this.makeHolder(_this.htmlspecialchars(p1))
         })
 
         // strong and em and some fuck

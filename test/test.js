@@ -63,7 +63,7 @@ describe('HyperDown.js', function() {
             assert.equal('<pre><code class="javascript">var s=&quot;123&quot;;</code></pre>', parser.makeHtml('```javascript\nvar s="123";\n```'));
         });
         it('type2', function() {
-            assert.equal('<p><code>Objective-C</code>使用了消息机制代替调用方法。</p>', parser.makeHtml('`Objective-C`使用了消息机制代替调用方法。'));
+            assert.equal('<p><code>Objective-C</code>使用了消息机制代替调<code>javascript</code>用方法。</p>', parser.makeHtml('`Objective-C`使用了消息机制代替调`javascript`用方法。'));
         });
     });
 
@@ -85,15 +85,14 @@ describe('HyperDown.js', function() {
 
     describe('footnote', function() {
         it('脚注 ', function() {
-            var footnote = 'Never write "[click here][^2]".\n [^2]: http://www.w3.org/QA/Tips/noClickHere';
-            assert.equal('demo', parser.makeHtml(footnote));
+            assert.equal('<p>Never write "[click here]<sup id="fnref-1"><a href="#fn-1" class="footnote-ref">1</a></sup>".</p><div class="footnotes"><hr><ol><li id="fn-1">2 <a href="#fnref-1" class="footnote-backref">&#8617;</a></li></ol></div>', parser.makeHtml('Never write "[click here][^2]".\n [^2]: http://www.w3.org/QA/Tips/noClickHere'));
         });
     });
 
     describe('complex', function() {
         it('list + code', function() {
             var codeInList = "1. 如下代码片段中的空检查是否有意义？\n Question * q = new Question;\n    if (q == NULL ) {\n    }\n    从上面我们了解到，\`operator new\` 在分配内存失败的情况下会调用 \`new_handler\` 尝试让系统释放点内存，然后再次尝试申请内存。如果这时系统中内存确实紧张，即使调用。";
-            assert.equal('', parser.makeHtml(codeInList));
+            assert.equal('<ol><li><p>如下代码片段中的空检查是否有意义？<br> Question * q = new Question;</p></li></ol>', parser.makeHtml(codeInList));
         });
     });
 });
