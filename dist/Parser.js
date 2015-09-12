@@ -194,11 +194,13 @@ var Parser = (function () {
 
         /**
          * @param text
+         * @param clearHolders
          * @return string
          */
     }, {
         key: 'releaseHolder',
         value: function releaseHolder(text) {
+            var clearHolders = arguments.length <= 1 || arguments[1] === undefined ? true : arguments[1];
 
             var deep = 0;
             while (text.indexOf("|\r") !== -1 && deep < 10) {
@@ -208,9 +210,9 @@ var Parser = (function () {
                 }
                 deep++;
             }
-
-            this.holders.clear();
-
+            if (clearHolders) {
+                this.holders.clear();
+            }
             return text;
         }
 
@@ -219,6 +221,7 @@ var Parser = (function () {
          *
          * @param string text
          * @param string whiteList
+         * @param bool clearHolders
          * @return string
          */
     }, {
@@ -227,6 +230,7 @@ var Parser = (function () {
             var _this3 = this;
 
             var whiteList = arguments.length <= 1 || arguments[1] === undefined ? '' : arguments[1];
+            var clearHolders = arguments.length <= 2 || arguments[2] === undefined ? true : arguments[2];
 
             text = this.call('beforeParseInline', text);
             var _this = this;
@@ -261,7 +265,7 @@ var Parser = (function () {
 
                 if (id === -1) {
                     id = _this.footnotes.length + 1;
-                    _this.footnotes[id] = _this3.parseInline(p1);
+                    _this.footnotes[id] = _this3.parseInline(p1, '', false);
                 }
 
                 return _this.makeHolder('<sup id="fnref-' + id + '"><a href="#fn-' + id + '" class="footnote-ref">' + id + '</a></sup>');
@@ -290,14 +294,14 @@ var Parser = (function () {
             // link
             var linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/;
             text = text.replace(linkPattern1, function (match, p1, p2) {
-                var escaped = _this.parseInline(_this.escapeBracket(p1));
+                var escaped = _this.parseInline(_this.escapeBracket(p1), '', false);
                 var url = _this.escapeBracket(p2);
                 return _this.makeHolder('<a href="' + url + '">' + escaped + '</a>');
             });
 
             var linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/;
             text = text.replace(linkPattern2, function (match, p1, p2) {
-                var escaped = _this.parseInline(_this.escapeBracket(p1));
+                var escaped = _this.parseInline(_this.escapeBracket(p1), '', false);
 
                 var result = _this.definitions[p2] ? '<a href="' + _this.definitions[p2] + '">' + escaped + '</a>' : escaped;
 
@@ -325,7 +329,7 @@ var Parser = (function () {
             text = this.call('afterParseInlineBeforeRelease', text);
 
             // release
-            text = this.releaseHolder(text);
+            text = this.releaseHolder(text, clearHolders);
 
             text = this.call('afterParseInline', text);
 

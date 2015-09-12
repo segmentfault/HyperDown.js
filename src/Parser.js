@@ -149,10 +149,10 @@ export default class Parser {
 
     /**
      * @param text
+     * @param clearHolders
      * @return string
      */
-    releaseHolder(text) {
-
+    releaseHolder(text, clearHolders = true) {
         let deep = 0;
         while (text.indexOf("|\r") !== -1 && deep < 10) {
             for (let key in this.holders) {
@@ -161,9 +161,9 @@ export default class Parser {
             }
             deep ++;
         }
-
-        this.holders.clear()
-
+        if (clearHolders) {
+            this.holders.clear()
+        }
         return text
     }
 
@@ -172,9 +172,10 @@ export default class Parser {
      *
      * @param string text
      * @param string whiteList
+     * @param bool clearHolders
      * @return string
      */
-    parseInline (text, whiteList = '') {
+    parseInline (text, whiteList = '', clearHolders = true) {
         text = this.call('beforeParseInline', text)
         let _this = this
         // code
@@ -208,7 +209,7 @@ export default class Parser {
 
             if (id === -1) {
                 id = _this.footnotes.length + 1
-                _this.footnotes[id] = this.parseInline(p1)
+                _this.footnotes[id] = this.parseInline(p1, '', false)
             }
 
             return _this.makeHolder(`<sup id="fnref-${id}"><a href="#fn-${id}" class="footnote-ref">${id}</a></sup>`)
@@ -237,14 +238,14 @@ export default class Parser {
         // link
         let linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/
         text = text.replace(linkPattern1, (match, p1, p2) => {
-            let escaped = _this.parseInline(_this.escapeBracket(p1))
+            let escaped = _this.parseInline(_this.escapeBracket(p1), '', false)
             let url = _this.escapeBracket(p2)
             return _this.makeHolder(`<a href="${url}">${escaped}</a>`)
         })
 
         let linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/
         text = text.replace(linkPattern2, (match, p1, p2) => {
-            let escaped = _this.parseInline(_this.escapeBracket(p1))
+            let escaped = _this.parseInline(_this.escapeBracket(p1), '', false)
 
             let result = _this.definitions[p2] ?
                 `<a href="${_this.definitions[p2]}">${escaped}</a>`
@@ -275,7 +276,7 @@ export default class Parser {
         text = this.call('afterParseInlineBeforeRelease', text);
 
         // release
-        text = this.releaseHolder(text)
+        text = this.releaseHolder(text, clearHolders)
 
         text = this.call('afterParseInline', text)
 
