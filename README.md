@@ -35,8 +35,6 @@ npm test
 ```
 
 
-[php 版 Hyperdown](https://github.com/SegmentFault/HyperDown)
-
 为何要写这样一个解析器
 ======================
 
@@ -78,3 +76,6 @@ $html = $parser->makeHtml($text);
 --------------
 
 - 图片和链接支持互相套用
+
+
+更多请参阅：[php 版 Hyperdown](https://github.com/SegmentFault/HyperDown)
