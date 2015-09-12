@@ -1,6 +1,6 @@
 {
   "name": "hyperdown",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "repo": "segmentfault/hyperdown.js",
   "description": "A markdown parser",
   "keywords": ["markdown", "hyperdown", "html"],
