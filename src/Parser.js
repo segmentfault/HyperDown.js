@@ -428,7 +428,7 @@ export default class Parser {
 
                         let rows = tableMatches[1].split(/(\+|\|)/)
                         let aligns = []
-                        for(let row of rows) {
+                        rows.forEach( row => {
                             let align = 'none'
 
                             if (tableMatches = row.match(/^\s*(:?)\-+(:?)\s*$/)) {
@@ -442,7 +442,7 @@ export default class Parser {
                             }
 
                             aligns.push(align)
-                        }
+                        })
 
                         this.setBlock(key, [head, aligns])
                     }

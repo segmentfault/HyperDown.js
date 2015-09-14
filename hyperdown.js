@@ -392,6 +392,8 @@
 	    }, {
 	        key: 'parseBlock',
 	        value: function parseBlock(text, lines) {
+	            var _this4 = this;
+
 	            this.blocks = [];
 	            this.current = 'normal';
 	            this.pos = -1;
@@ -504,34 +506,28 @@
 	                    case /^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+)|(?:(?:[ :]*\-[ :]*)+(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/g.test(line):
 	                        var tableMatches = /^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+)|(?:(?:[ :]*\-[ :]*)+(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/g.exec(line);
 	                        if (this.isBlock('normal')) {
-	                            var block = this.getBlock();
-	                            var head = false;
+	                            (function () {
+	                                var block = _this4.getBlock();
+	                                var head = false;
 
-	                            if (block.length === 0 || block[0] !== 'normal' || /^\s*$/.test(lines[block[2]])) {
-	                                this.startBlock('table', key);
-	                            } else {
-	                                head = true;
-	                                this.backBlock(1, 'table');
-	                            }
-
-	                            if (tableMatches[1][0] == '|') {
-	                                tableMatches[1] = tableMatches[1].substr(1);
-
-	                                if (tableMatches[1][tableMatches[1].length - 1] == '|') {
-	                                    tableMatches[1] = tableMatches[1].slice(0, -1);
+	                                if (block.length === 0 || block[0] !== 'normal' || /^\s*$/.test(lines[block[2]])) {
+	                                    _this4.startBlock('table', key);
+	                                } else {
+	                                    head = true;
+	                                    _this4.backBlock(1, 'table');
 	                                }
-	                            }
 
-	                            var rows = tableMatches[1].split(/(\+|\|)/);
-	                            var aligns = [];
-	                            var _iteratorNormalCompletion = true;
-	                            var _didIteratorError = false;
-	                            var _iteratorError = undefined;
+	                                if (tableMatches[1][0] == '|') {
+	                                    tableMatches[1] = tableMatches[1].substr(1);
 
-	                            try {
-	                                for (var _iterator = rows[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-	                                    var row = _step.value;
+	                                    if (tableMatches[1][tableMatches[1].length - 1] == '|') {
+	                                        tableMatches[1] = tableMatches[1].slice(0, -1);
+	                                    }
+	                                }
 
+	                                var rows = tableMatches[1].split(/(\+|\|)/);
+	                                var aligns = [];
+	                                rows.forEach(function (row) {
 	                                    var align = 'none';
 
 	                                    if (tableMatches = row.match(/^\s*(:?)\-+(:?)\s*$/)) {
@@ -545,23 +541,10 @@
 	                                    }
 
 	                                    aligns.push(align);
-	                                }
-	                            } catch (err) {
-	                                _didIteratorError = true;
-	                                _iteratorError = err;
-	                            } finally {
-	                                try {
-	                                    if (!_iteratorNormalCompletion && _iterator['return']) {
-	                                        _iterator['return']();
-	                                    }
-	                                } finally {
-	                                    if (_didIteratorError) {
-	                                        throw _iteratorError;
-	                                    }
-	                                }
-	                            }
+	                                });
 
-	                            this.setBlock(key, [head, aligns]);
+	                                _this4.setBlock(key, [head, aligns]);
+	                            })();
 	                        }
 	                        break;
 
@@ -734,10 +717,10 @@
 	    }, {
 	        key: 'parsePre',
 	        value: function parsePre(lines) {
-	            var _this4 = this;
+	            var _this5 = this;
 
 	            lines.forEach(function (line, ind) {
-	                lines[ind] = _this4.htmlspecialchars(line.substr(4));
+	                lines[ind] = _this5.htmlspecialchars(line.substr(4));
 	            });
 	            var str = lines.join('\n');
 
@@ -809,7 +792,7 @@
 	    }, {
 	        key: 'parseList',
 	        value: function parseList(lines) {
-	            var _this5 = this;
+	            var _this6 = this;
 
 	            var html = '';
 	            var minSpace = 99999;
@@ -864,7 +847,7 @@
 	                        }
 
 	                        if (leftLines.length) {
-	                            html += "<li>" + _this5.parse(leftLines.join("\n")) + "</li>";
+	                            html += "<li>" + _this6.parse(leftLines.join("\n")) + "</li>";
 	                        }
 
 	                        leftLines = [text];
@@ -891,7 +874,7 @@
 	    }, {
 	        key: 'parseTable',
 	        value: function parseTable(lines, value) {
-	            var _this6 = this;
+	            var _this7 = this;
 
 	            var _value = _slicedToArray(value, 2);
 
@@ -970,7 +953,7 @@
 	                        html += ' align="' + aligns[key] + '"';
 	                    }
 
-	                    html += '>' + _this6.parseInline(text) + ('</' + tag + '>');
+	                    html += '>' + _this7.parseInline(text) + ('</' + tag + '>');
 	                });
 
 	                html += '</tr>';
@@ -983,9 +966,9 @@
 	            };
 
 	            for (var key in lines) {
-	                var _ret = _loop(key);
+	                var _ret2 = _loop(key);
 
-	                if (_ret === 'continue') continue;
+	                if (_ret2 === 'continue') continue;
 	            }
 
 	            if (body !== null) {
@@ -1016,10 +999,10 @@
 	    }, {
 	        key: 'parseNormal',
 	        value: function parseNormal(lines) {
-	            var _this7 = this;
+	            var _this8 = this;
 
 	            lines = lines.map(function (line) {
-	                return _this7.parseInline(line);
+	                return _this8.parseInline(line);
 	            });
 
 	            var str = lines.join("\n").trim();
@@ -1077,10 +1060,10 @@
 	    }, {
 	        key: 'parseHtml',
 	        value: function parseHtml(lines, type) {
-	            var _this8 = this;
+	            var _this9 = this;
 
 	            lines.forEach(function (line) {
-	                line = _this8.parseInline(line, _this8.specialWhiteList[type] ? _this8.specialWhiteList[type] : '');
+	                line = _this9.parseInline(line, _this9.specialWhiteList[type] ? _this9.specialWhiteList[type] : '');
 	            });
 
 	            return lines.join("\n");
