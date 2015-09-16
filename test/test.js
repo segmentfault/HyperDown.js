@@ -42,7 +42,7 @@ describe('HyperDown.js', function() {
             assert.equal('<p><a href="http://sf.gg">sf.gg</a>123</p>', parser.makeHtml('[sf.gg](http://sf.gg)123'));
         });
         it('type2', function() {
-            assert.equal('<p>123<a href="http://sf.gg">http://sf.gg</a> 123 <a href="http://sf.gg">http://sf.gg</a></p>', parser.makeHtml('123http://sf.gg 123 http://sf.gg'));
+            assert.equal('<p>123<a href="http://sf.gg(tt)">http://sf.gg(tt)</a> 123 <a href="http://sf.gg">http://sf.gg</a></p>', parser.makeHtml('123http://sf.gg(tt) 123 http://sf.gg'));
         });
         it('type3', function() {
             assert.equal('<p><a href="http://sf.gg">sf.gg</a></p>', parser.makeHtml('[sf.gg][1]\n [1]: http://sf.gg'));
