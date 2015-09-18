@@ -94,5 +94,8 @@ describe('HyperDown.js', function() {
             var codeInList = "1. 如下代码片段中的空检查是否有意义？\n Question * q = new Question;\n    if (q == NULL ) {\n    }\n    从上面我们了解到，\`operator new\` 在分配内存失败的情况下会调用 \`new_handler\` 尝试让系统释放点内存，然后再次尝试申请内存。如果这时系统中内存确实紧张，即使调用。";
             assert.equal('<ol><li><p>如下代码片段中的空检查是否有意义？<br> Question * q = new Question;</p></li></ol>', parser.makeHtml(codeInList));
         });
+        it('specialhtml', function() {
+            assert.equal('<p>&lt;li&gt;asdf</p>', parser.makeHtml('<li>asdf'));
+        });
     });
 });

@@ -188,16 +188,14 @@ export default class Parser {
             return `<a href="${p1}">${p1}</a>`
         })
 
-        // encode unsafe tags
-        let unsafeTagMatches = /<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i.exec(text)
-        if (unsafeTagMatches) {
+        text = text.replace(/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/ig, (match, p1, p2, p3) => {
             let whiteLists = this.commonWhiteList + '|' + whiteList
-            if (whiteLists.toLowerCase().indexOf(unsafeTagMatches[2].toLowerCase()) !== -1) {
-                return this.makeHolder(unsafeTagMatches[0])
+            if(whiteLists.toLowerCase().indexOf(p2.toLowerCase()) !== -1 ) {
+                return this.makeHolder(match)
             } else {
-                return this.htmlspecialchars(unsafeTagMatches[0])
+                return this.htmlspecialchars(match)
             }
-        }
+        })
 
         text = text.replace(/</g, '&lt;')
         text = text.replace(/>/g, '&gt;')

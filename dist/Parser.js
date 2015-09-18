@@ -254,7 +254,7 @@ var Parser = (function () {
                     return this.htmlspecialchars(unsafeTagMatches[0]);
                 }
             }
-
+            console.log(text);
             text = text.replace(/</g, '&lt;');
             text = text.replace(/>/g, '&gt;');
 

@@ -290,16 +290,14 @@
 	                return '<a href="' + p1 + '">' + p1 + '</a>';
 	            });
 
-	            // encode unsafe tags
-	            var unsafeTagMatches = /<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i.exec(text);
-	            if (unsafeTagMatches) {
-	                var whiteLists = this.commonWhiteList + '|' + whiteList;
-	                if (whiteLists.toLowerCase().indexOf(unsafeTagMatches[2].toLowerCase()) !== -1) {
-	                    return this.makeHolder(unsafeTagMatches[0]);
+	            text = text.replace(/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/ig, function (match, p1, p2, p3) {
+	                var whiteLists = _this3.commonWhiteList + '|' + whiteList;
+	                if (whiteLists.toLowerCase().indexOf(p2.toLowerCase()) !== -1) {
+	                    return _this3.makeHolder(match);
 	                } else {
-	                    return this.htmlspecialchars(unsafeTagMatches[0]);
+	                    return _this3.htmlspecialchars(match);
 	                }
-	            }
+	            });
 
 	            text = text.replace(/</g, '&lt;');
 	            text = text.replace(/>/g, '&gt;');
