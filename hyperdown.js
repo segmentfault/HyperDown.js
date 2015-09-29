@@ -431,14 +431,14 @@
 	                var htmlPattern1 = new RegExp('^\s*<(' + special + ')(\s+[^>]*)?>', 'i');
 	                var htmlPattern2 = new RegExp('<\/(' + special + ')>\s*$', 'i');
 	                if (matches = line.match(htmlPattern1)) {
-	                    var _tag = matches[1].toLowerCase();
-	                    if (!this.isBlock('html', _tag) && !this.isBlock('pre')) {
-	                        this.startBlock('html', key, _tag);
+	                    var tag = matches[1].toLowerCase();
+	                    if (!this.isBlock('html', tag) && !this.isBlock('pre')) {
+	                        this.startBlock('html', key, tag);
 	                    }
 
 	                    continue;
 	                } else if (matches = line.match(htmlPattern2)) {
-	                    tag = matches[1].toLowerCase();
+	                    var tag = matches[1].toLowerCase();
 
 	                    if (this.isBlock('html', tag)) {
 	                        this.setBlock(key).endBlock();

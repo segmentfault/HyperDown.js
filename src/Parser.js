@@ -338,7 +338,7 @@ export default class Parser {
 
                 continue
             } else if (matches = line.match(htmlPattern2)) {
-                tag = matches[1].toLowerCase()
+                let tag = matches[1].toLowerCase()
 
                 if (this.isBlock('html', tag)) {
                     this.setBlock(key)
