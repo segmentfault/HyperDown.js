@@ -508,7 +508,7 @@ var Parser = (function () {
                         break;
 
                     // multi heading
-                    case /^\s*((=|-){2,})\s*$/.test(line) && (this.getBlock() && !/^\s*$/.test(lines[this.getBlock()[2]])):
+                    case /^\s*((=|-){2,})\s*$/.test(line) && (this.getBlock() && this.getBlock()[0] === 'normal' && !/^\s*$/.test(lines[this.getBlock()[2]])):
                         // check if last line isn't empty
                         var multiHeadingMatches = line.match(/^\s*((=|-){2,})\s*$/);
                         if (this.isBlock('normal')) {

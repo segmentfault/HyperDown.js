@@ -123,7 +123,9 @@ export default class Parser {
 
             html += result
         })
-
+        if (this.hooks.afterParse) {
+            html = this.call('afterParse', html)
+        }
         return html
     }
 
@@ -395,7 +397,7 @@ export default class Parser {
                 case /^ {4}/.test(line):
                     emptyCount = 0
 
-                    if (this.isBlock('pre')) {
+                    if (this.isBlock('pre') || this.isBlock('list')) {
                         this.setBlock(key)
                     } else if (this.isBlock('normal')) {
                         this.startBlock('pre', key)
@@ -455,7 +457,7 @@ export default class Parser {
                     break
 
                 // multi heading
-                case /^\s*((=|-){2,})\s*$/.test(line) && (this.getBlock() && !/^\s*$/.test(lines[this.getBlock()[2]])):    // check if last line isn't empty
+                case /^\s*((=|-){2,})\s*$/.test(line) && (this.getBlock() && this.getBlock()[0] === 'normal' && !/^\s*$/.test(lines[this.getBlock()[2]])):    // check if last line isn't empty
                     let multiHeadingMatches = line.match(/^\s*((=|-){2,})\s*$/)
                     if (this.isBlock('normal')) {
                         this.backBlock(1, 'mh', multiHeadingMatches[1][0] == '=' ? 1 : 2)
@@ -672,7 +674,7 @@ export default class Parser {
 
         // count levels
         lines.forEach( (line, key) => {
-            let matches = line.match(/^(\s*)((?:[0-9a-z]\.?)|\-|\+|\*)(\s+)(.*)$/)
+            let matches = line.match(/^(\s*)((?:[0-9a-z]+\.?)|\-|\+|\*)(\s+)(.*)$/)
             if (matches) {
                 let space = matches[1].length
                 let type = /[\+\-\*]/.test(matches[2]) ? 'ul' : 'ol'
@@ -705,16 +707,15 @@ export default class Parser {
                     let pattern = new RegExp("^\s{" + secondMinSpace + "}")
                     leftLines.push(line.replace(pattern, ''))
                 } else {
+                    if (leftLines.length) {
+                        html += "<li>" + this.parse(leftLines.join("\n")) + "</li>"
+                    }
                     if (lastType !== type) {
                         if (lastType.length) {
                             html += `</${lastType}>`
                         }
 
                         html += `<${type}>`
-                    }
-
-                    if (leftLines.length) {
-                        html += "<li>" + this.parse(leftLines.join("\n")) + "</li>"
                     }
 
                     leftLines = [text]

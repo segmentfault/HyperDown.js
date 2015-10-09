@@ -97,5 +97,8 @@ describe('HyperDown.js', function() {
         it('specialhtml', function() {
             assert.equal('<p>&lt;li&gt;asdf</p>', parser.makeHtml('<li>asdf'));
         });
+        it('specialHR', function() {
+            assert.equal('<pre><code>a</code></pre><hr>', parser.makeHtml('```\na\n```\n---'));
+        });
     });
 });

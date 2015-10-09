@@ -208,7 +208,9 @@
 
 	                html += result;
 	            });
-
+	            if (this.hooks.afterParse) {
+	                html = this.call('afterParse', html);
+	            }
 	            return html;
 	        }
 
@@ -493,7 +495,7 @@
 	                    case /^ {4}/.test(line):
 	                        emptyCount = 0;
 
-	                        if (this.isBlock('pre')) {
+	                        if (this.isBlock('pre') || this.isBlock('list')) {
 	                            this.setBlock(key);
 	                        } else if (this.isBlock('normal')) {
 	                            this.startBlock('pre', key);
@@ -554,7 +556,7 @@
 	                        break;
 
 	                    // multi heading
-	                    case /^\s*((=|-){2,})\s*$/.test(line) && (this.getBlock() && !/^\s*$/.test(lines[this.getBlock()[2]])):
+	                    case /^\s*((=|-){2,})\s*$/.test(line) && (this.getBlock() && this.getBlock()[0] === 'normal' && !/^\s*$/.test(lines[this.getBlock()[2]])):
 	                        // check if last line isn't empty
 	                        var multiHeadingMatches = line.match(/^\s*((=|-){2,})\s*$/);
 	                        if (this.isBlock('normal')) {
@@ -798,7 +800,7 @@
 
 	            // count levels
 	            lines.forEach(function (line, key) {
-	                var matches = line.match(/^(\s*)((?:[0-9a-z]\.?)|\-|\+|\*)(\s+)(.*)$/);
+	                var matches = line.match(/^(\s*)((?:[0-9a-z]+\.?)|\-|\+|\*)(\s+)(.*)$/);
 	                if (matches) {
 	                    var space = matches[1].length;
 	                    var type = /[\+\-\*]/.test(matches[2]) ? 'ul' : 'ol';
@@ -836,16 +838,15 @@
 	                        var pattern = new RegExp("^\s{" + secondMinSpace + "}");
 	                        leftLines.push(line.replace(pattern, ''));
 	                    } else {
+	                        if (leftLines.length) {
+	                            html += "<li>" + _this6.parse(leftLines.join("\n")) + "</li>";
+	                        }
 	                        if (lastType !== type) {
 	                            if (lastType.length) {
 	                                html += '</' + lastType + '>';
 	                            }
 
 	                            html += '<' + type + '>';
-	                        }
-
-	                        if (leftLines.length) {
-	                            html += "<li>" + _this6.parse(leftLines.join("\n")) + "</li>";
 	                        }
 
 	                        leftLines = [text];
