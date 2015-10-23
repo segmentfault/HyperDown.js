@@ -289,7 +289,7 @@
 
 	            // link
 	            text = text.replace(/<(https?:\/\/.+)>/ig, function (match, p1) {
-	                return '<a href="' + p1 + '">' + p1 + '</a>';
+	                return _this3.makeHolder('<a href="' + p1 + '">' + p1 + '</a>');
 	            });
 
 	            text = text.replace(/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/ig, function (match, p1, p2, p3) {
@@ -360,13 +360,14 @@
 	            });
 
 	            // strong and em and some fuck
-	            text = text.replace(/(\*{3})(.+?)\1/g, "<strong><em>$2</em></strong>");
-	            text = text.replace(/(\*{2})(.+?)\1/g, "<strong>$2</strong>");
-	            text = text.replace(/(\*)(.+?)\1/g, "<em>$2</em>");
-	            text = text.replace(/(\s+)(_{3})(.+?)\2(\s+)/g, "$1<strong><em>$3</em></strong>$4");
-	            text = text.replace(/(\s+)(_{2})(.+?)\2(\s+)/g, "$1<strong>$3</strong>$4");
-	            text = text.replace(/(\s+)(_)(.+?)\2(\s+)/g, "$1<em>$3</em>$4");
-	            text = text.replace(/(~{2})(.+?)\1/g, "<del>$2</del>");
+	            // text = text.replace(/(\*{3})(.+?)\1/g, "<strong><em>$2</em></strong>")
+	            // text = text.replace(/(\*{2})(.+?)\1/g, "<strong>$2</strong>")
+	            // text = text.replace(/(\*)(.+?)\1/g, "<em>$2</em>")
+	            // text = text.replace(/(\s+)(_{3})(.+?)\2(\s+)/g, "$1<strong><em>$3</em></strong>$4")
+	            // text = text.replace(/(\s+)(_{2})(.+?)\2(\s+)/g, "$1<strong>$3</strong>$4")
+	            // text = text.replace(/(\s+)(_)(.+?)\2(\s+)/g, "$1<em>$3</em>$4")
+	            // text = text.replace(/(~{2})(.+?)\1/g, "<del>$2</del>")
+	            text = this.parseInlineCallback(text);
 	            text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, "<a href=\"mailto:$1\">$1</a>");
 
 	            // autolink url
@@ -383,6 +384,45 @@
 	        }
 
 	        /**
+	         * @param text
+	         * @return mixed
+	         */
+	    }, {
+	        key: 'parseInlineCallback',
+	        value: function parseInlineCallback(text) {
+	            var _this4 = this;
+
+	            text = text.replace(/(\*{3})(.+?)\1/g, function (match, p1, p2) {
+	                return '<strong><em>' + _this4.parseInlineCallback(p2) + '</em></strong>';
+	            });
+
+	            text = text.replace(/(\*{2})(.+?)\1/g, function (match, p1, p2) {
+	                return '<strong>' + _this4.parseInlineCallback(p2) + '</strong>';
+	            });
+
+	            text = text.replace(/(\*)(.+?)\1/g, function (match, p1, p2) {
+	                return '<em>' + _this4.parseInlineCallback(p2) + '</em>';
+	            });
+
+	            text = text.replace(/(\s+|^)(_{3})(.+?)\2(\s+|$)/g, function (match, p1, p2, p3, p4) {
+	                return p1 + '<strong><em>' + _this4.parseInlineCallback(p3) + '</em></strong>' + p4;
+	            });
+
+	            text = text.replace(/(\s+|^)(_{2})(.+?)\2(\s+|$)/g, function (match, p1, p2, p3, p4) {
+	                return p1 + '<strong>' + _this4.parseInlineCallback(p3) + '</strong>' + p4;
+	            });
+
+	            text = text.replace(/(\s+|^)(_)(.+?)\2(\s+|$)/g, function (match, p1, p2, p3, p4) {
+	                return p1 + '<em>' + _this4.parseInlineCallback(p3) + '</em>' + p4;
+	            });
+
+	            text = text.replace(/(~{2})(.+?)\1/g, function (match, p1, p2) {
+	                return '<del>' + _this4.parseInlineCallback(p2) + '</del>';
+	            });
+	            return text;
+	        }
+
+	        /**
 	         * parseBlock
 	         *
 	         * @param string text
@@ -392,7 +432,7 @@
 	    }, {
 	        key: 'parseBlock',
 	        value: function parseBlock(text, lines) {
-	            var _this4 = this;
+	            var _this5 = this;
 
 	            this.blocks = [];
 	            this.current = 'normal';
@@ -507,14 +547,14 @@
 	                        var tableMatches = /^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+)|(?:(?:[ :]*\-[ :]*)+(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/g.exec(line);
 	                        if (this.isBlock('normal')) {
 	                            (function () {
-	                                var block = _this4.getBlock();
+	                                var block = _this5.getBlock();
 	                                var head = false;
 
 	                                if (block.length === 0 || block[0] !== 'normal' || /^\s*$/.test(lines[block[2]])) {
-	                                    _this4.startBlock('table', key);
+	                                    _this5.startBlock('table', key);
 	                                } else {
 	                                    head = true;
-	                                    _this4.backBlock(1, 'table');
+	                                    _this5.backBlock(1, 'table');
 	                                }
 
 	                                if (tableMatches[1][0] == '|') {
@@ -543,7 +583,7 @@
 	                                    aligns.push(align);
 	                                });
 
-	                                _this4.setBlock(key, [head, aligns]);
+	                                _this5.setBlock(key, [head, aligns]);
 	                            })();
 	                        }
 	                        break;
@@ -717,10 +757,10 @@
 	    }, {
 	        key: 'parsePre',
 	        value: function parsePre(lines) {
-	            var _this5 = this;
+	            var _this6 = this;
 
 	            lines.forEach(function (line, ind) {
-	                lines[ind] = _this5.htmlspecialchars(line.substr(4));
+	                lines[ind] = _this6.htmlspecialchars(line.substr(4));
 	            });
 	            var str = lines.join('\n');
 
@@ -792,7 +832,7 @@
 	    }, {
 	        key: 'parseList',
 	        value: function parseList(lines) {
-	            var _this6 = this;
+	            var _this7 = this;
 
 	            var html = '';
 	            var minSpace = 99999;
@@ -839,7 +879,7 @@
 	                        leftLines.push(line.replace(pattern, ''));
 	                    } else {
 	                        if (leftLines.length) {
-	                            html += "<li>" + _this6.parse(leftLines.join("\n")) + "</li>";
+	                            html += "<li>" + _this7.parse(leftLines.join("\n")) + "</li>";
 	                        }
 	                        if (lastType !== type) {
 	                            if (lastType.length) {
@@ -873,7 +913,7 @@
 	    }, {
 	        key: 'parseTable',
 	        value: function parseTable(lines, value) {
-	            var _this7 = this;
+	            var _this8 = this;
 
 	            var _value = _slicedToArray(value, 2);
 
@@ -952,7 +992,7 @@
 	                        html += ' align="' + aligns[key] + '"';
 	                    }
 
-	                    html += '>' + _this7.parseInline(text) + ('</' + tag + '>');
+	                    html += '>' + _this8.parseInline(text) + ('</' + tag + '>');
 	                });
 
 	                html += '</tr>';
@@ -998,10 +1038,10 @@
 	    }, {
 	        key: 'parseNormal',
 	        value: function parseNormal(lines) {
-	            var _this8 = this;
+	            var _this9 = this;
 
 	            lines = lines.map(function (line) {
-	                return _this8.parseInline(line);
+	                return _this9.parseInline(line);
 	            });
 
 	            var str = lines.join("\n").trim();
@@ -1059,10 +1099,10 @@
 	    }, {
 	        key: 'parseHtml',
 	        value: function parseHtml(lines, type) {
-	            var _this9 = this;
+	            var _this10 = this;
 
 	            lines.forEach(function (line) {
-	                line = _this9.parseInline(line, _this9.specialWhiteList[type] ? _this9.specialWhiteList[type] : '');
+	                line = _this10.parseInline(line, _this10.specialWhiteList[type] ? _this10.specialWhiteList[type] : '');
 	            });
 
 	            return lines.join("\n");

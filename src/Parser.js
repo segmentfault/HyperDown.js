@@ -187,7 +187,7 @@ export default class Parser {
 
         // link
         text = text.replace(/<(https?:\/\/.+)>/ig, (match, p1) => {
-            return `<a href="${p1}">${p1}</a>`
+            return this.makeHolder(`<a href="${p1}">${p1}</a>`);
         })
 
         text = text.replace(/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/ig, (match, p1, p2, p3) => {
@@ -260,13 +260,14 @@ export default class Parser {
         })
 
         // strong and em and some fuck
-        text = text.replace(/(\*{3})(.+?)\1/g, "<strong><em>$2</em></strong>")
-        text = text.replace(/(\*{2})(.+?)\1/g, "<strong>$2</strong>")
-        text = text.replace(/(\*)(.+?)\1/g, "<em>$2</em>")
-        text = text.replace(/(\s+)(_{3})(.+?)\2(\s+)/g, "$1<strong><em>$3</em></strong>$4")
-        text = text.replace(/(\s+)(_{2})(.+?)\2(\s+)/g, "$1<strong>$3</strong>$4")
-        text = text.replace(/(\s+)(_)(.+?)\2(\s+)/g, "$1<em>$3</em>$4")
-        text = text.replace(/(~{2})(.+?)\1/g, "<del>$2</del>")
+        // text = text.replace(/(\*{3})(.+?)\1/g, "<strong><em>$2</em></strong>")
+        // text = text.replace(/(\*{2})(.+?)\1/g, "<strong>$2</strong>")
+        // text = text.replace(/(\*)(.+?)\1/g, "<em>$2</em>")
+        // text = text.replace(/(\s+)(_{3})(.+?)\2(\s+)/g, "$1<strong><em>$3</em></strong>$4")
+        // text = text.replace(/(\s+)(_{2})(.+?)\2(\s+)/g, "$1<strong>$3</strong>$4")
+        // text = text.replace(/(\s+)(_)(.+?)\2(\s+)/g, "$1<em>$3</em>$4")
+        // text = text.replace(/(~{2})(.+?)\1/g, "<del>$2</del>")
+        text = this.parseInlineCallback(text)
         text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, "<a href=\"mailto:$1\">$1</a>")
 
         // autolink url
@@ -281,6 +282,41 @@ export default class Parser {
         text = this.call('afterParseInline', text)
 
         return text
+    }
+
+    /**
+     * @param text
+     * @return mixed
+     */
+    parseInlineCallback(text) {
+        text = text.replace(/(\*{3})(.+?)\1/g, (match, p1, p2) => {
+            return '<strong><em>' + this.parseInlineCallback(p2) + '</em></strong>';
+        });
+
+        text = text.replace(/(\*{2})(.+?)\1/g, (match, p1, p2) => {
+            return '<strong>' + this.parseInlineCallback(p2) + '</strong>';
+        });
+
+        text = text.replace(/(\*)(.+?)\1/g, (match, p1, p2) => {
+            return '<em>' + this.parseInlineCallback(p2) + '</em>';
+        });
+
+        text = text.replace(/(\s+|^)(_{3})(.+?)\2(\s+|$)/g, (match, p1, p2, p3, p4) => {
+            return p1 + '<strong><em>' + this.parseInlineCallback(p3) + '</em></strong>' + p4;
+        });
+
+        text = text.replace(/(\s+|^)(_{2})(.+?)\2(\s+|$)/g, (match, p1, p2, p3, p4) => {
+            return p1 + '<strong>' + this.parseInlineCallback(p3) + '</strong>' + p4;
+        });
+
+        text = text.replace(/(\s+|^)(_)(.+?)\2(\s+|$)/g, (match, p1, p2, p3, p4) => {
+            return p1 + '<em>' + this.parseInlineCallback(p3) + '</em>' + p4;
+        });
+
+        text = text.replace(/(~{2})(.+?)\1/g, (match, p1, p2) => {
+            return '<del>' + this.parseInlineCallback(p2) + '</del>';
+        });
+        return text;
     }
 
     /**
