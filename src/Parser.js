@@ -6,6 +6,7 @@
  * @license BSD License
  */
 
+import 'babel-core/polyfill'
 import md5 from 'md5'
 
 export default class Parser {
