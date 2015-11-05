@@ -20,6 +20,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'd
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
+require('babel-core/polyfill');
+
 var _md5 = require('md5');
 
 var _md52 = _interopRequireDefault(_md5);
@@ -610,6 +612,12 @@ var Parser = (function () {
                             } else {
                                 this.startBlock('normal', key);
                             }
+                        } else if (this.isBlock('quote')) {
+                            if (/^\s*$/.test(line)) {
+                                this.startBlock('normal', key);
+                            } else {
+                                this.setBlock(key);
+                            }
                         } else {
                             var block = this.getBlock();
                             if (block === null || block.length === 0 || block[0] !== 'normal') {
@@ -769,6 +777,7 @@ var Parser = (function () {
     }, {
         key: 'parseQuote',
         value: function parseQuote(lines) {
+            console.log(lines);
             lines.forEach(function (line, key) {
                 lines[key] = line.replace(/^\s*> ?/, '');
             });
@@ -1239,4 +1248,7 @@ var Parser = (function () {
 })();
 
 exports['default'] = Parser;
+
+var parser = new Parser();
+console.log(parser.makeHtml('>1234\n1234'));
 module.exports = exports['default'];

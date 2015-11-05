@@ -555,6 +555,12 @@ export default class Parser {
                         } else {
                             this.startBlock('normal', key)
                         }
+                    } else if (this.isBlock('quote')) {
+                        if (/^\s*$/.test(line)) {
+                            this.startBlock('normal', key)
+                        } else {
+                            this.setBlock(key)
+                        }
                     } else {
                         let block = this.getBlock()
                         if (block === null || block.length === 0 || block[0] !== 'normal') {
@@ -691,6 +697,7 @@ export default class Parser {
      * @return string
      */
     parseQuote(lines) {
+        console.log(lines)
         lines.forEach( (line, key) => {
             lines[key] = line.replace(/^\s*> ?/, '')
         })
@@ -1082,3 +1089,5 @@ export default class Parser {
         return this
     }
 }
+var parser = new Parser()
+console.log(parser.makeHtml('>1234\n1234'))

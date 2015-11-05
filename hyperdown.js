@@ -658,6 +658,12 @@
 	                            } else {
 	                                this.startBlock('normal', key);
 	                            }
+	                        } else if (this.isBlock('quote')) {
+	                            if (/^\s*$/.test(line)) {
+	                                this.startBlock('normal', key);
+	                            } else {
+	                                this.setBlock(key);
+	                            }
 	                        } else {
 	                            var block = this.getBlock();
 	                            if (block === null || block.length === 0 || block[0] !== 'normal') {
@@ -817,6 +823,7 @@
 	    }, {
 	        key: 'parseQuote',
 	        value: function parseQuote(lines) {
+	            console.log(lines);
 	            lines.forEach(function (line, key) {
 	                lines[key] = line.replace(/^\s*> ?/, '');
 	            });
@@ -1287,6 +1294,9 @@
 	})();
 
 	exports['default'] = Parser;
+
+	var parser = new Parser();
+	console.log(parser.makeHtml('>1234\n1234'));
 	module.exports = exports['default'];
 
 /***/ },
