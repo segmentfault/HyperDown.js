@@ -570,9 +570,10 @@ var Parser = (function () {
                     // normal
                     default:
                         if (this.isBlock('list')) {
-                            var _matches = line.match(/^(\s*)/);
-
-                            if (line.length == _matches[1].length) {
+                            // let matches = line.match(/^(\s*)/)
+                            //
+                            // if (line.length == matches[1].length) { // empty line
+                            if (/^(\s*)/.test(line)) {
                                 // empty line
                                 if (emptyCount > 0) {
                                     this.startBlock('normal', key);
@@ -587,9 +588,9 @@ var Parser = (function () {
                                 this.startBlock('normal', key);
                             }
                         } else if (this.isBlock('footnote')) {
-                            var _matches2 = line.match(/^(\s*)/);
+                            var _matches = line.match(/^(\s*)/);
 
-                            if (_matches2[1].length >= this.getBlock()[3][0]) {
+                            if (_matches[1].length >= this.getBlock()[3][0]) {
                                 this.setBlock(key);
                             } else {
                                 this.startBlock('normal', key);
@@ -613,10 +614,19 @@ var Parser = (function () {
                                 this.startBlock('normal', key);
                             }
                         } else if (this.isBlock('quote')) {
-                            if (/^\s*$/.test(line)) {
-                                this.startBlock('normal', key);
-                            } else {
+                            if (/^(\s*)/.test(line)) {
+                                // empty line
+                                if (emptyCount > 0) {
+                                    this.startBlock('normal', key);
+                                } else {
+                                    this.setBlock(key);
+                                }
+
+                                emptyCount++;
+                            } else if ($emptyCount == 0) {
                                 this.setBlock(key);
+                            } else {
+                                this.startBlock('normal', key);
                             }
                         } else {
                             var block = this.getBlock();
@@ -664,11 +674,13 @@ var Parser = (function () {
                 }
 
                 if ('normal' === type) {
-                    // combine two splitted list
+                    // combine two blocks
+                    var types = ['list', 'quote'];
+
                     if (from === to && lines[from].match(/^\s*$/) && prevBlock && nextBlock) {
-                        if (prevBlock[0] === 'list' && nextBlock[0] === 'list') {
+                        if (prevBlock[0] == nextBlock[0] && types.indexOf(prevBlock[0] !== -1)) {
                             // combine 3 blocks
-                            blocks[key - 1] = ['list', prevBlock[1], nextBlock[2], null];
+                            blocks[key - 1] = [prevBlock[0], prevBlock[1], nextBlock[2], NULL];
                             blocks.splice(key, 2);
                         }
                     }
@@ -777,7 +789,6 @@ var Parser = (function () {
     }, {
         key: 'parseQuote',
         value: function parseQuote(lines) {
-            console.log(lines);
             lines.forEach(function (line, key) {
                 lines[key] = line.replace(/^\s*> ?/, '');
             });
@@ -1248,7 +1259,4 @@ var Parser = (function () {
 })();
 
 exports['default'] = Parser;
-
-var parser = new Parser();
-console.log(parser.makeHtml('>1234\n1234'));
 module.exports = exports['default'];

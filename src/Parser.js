@@ -514,9 +514,10 @@ export default class Parser {
                 // normal
                 default:
                     if (this.isBlock('list')) {
-                        let matches = line.match(/^(\s*)/)
-
-                        if (line.length == matches[1].length) { // empty line
+                        // let matches = line.match(/^(\s*)/)
+                        //
+                        // if (line.length == matches[1].length) { // empty line
+                        if (/^(\s*)/.test(line)) { // empty line
                             if (emptyCount > 0) {
                                 this.startBlock('normal', key)
                             } else {
@@ -556,10 +557,18 @@ export default class Parser {
                             this.startBlock('normal', key)
                         }
                     } else if (this.isBlock('quote')) {
-                        if (/^\s*$/.test(line)) {
-                            this.startBlock('normal', key)
-                        } else {
+                        if (/^(\s*)/.test(line)) { // empty line
+                            if (emptyCount > 0) {
+                                this.startBlock('normal', key)
+                            } else {
+                                this.setBlock(key)
+                            }
+
+                            emptyCount ++
+                        } else if ($emptyCount == 0) {
                             this.setBlock(key)
+                        } else {
+                            this.startBlock('normal', key)
                         }
                     } else {
                         let block = this.getBlock()
@@ -601,12 +610,14 @@ export default class Parser {
             }
 
             if ('normal' === type) {
-                // combine two splitted list
+                // combine two blocks
+                let types = ['list', 'quote']
+
                 if (from === to && lines[from].match(/^\s*$/)
                     && prevBlock && nextBlock) {
-                    if (prevBlock[0] === 'list' && nextBlock[0] === 'list') {
+                    if (prevBlock[0] == nextBlock[0] && types.indexOf(prevBlock[0] !== -1)) {
                         // combine 3 blocks
-                        blocks[key - 1] = ['list', prevBlock[1], nextBlock[2], null]
+                        blocks[key - 1] = [prevBlock[0], prevBlock[1], nextBlock[2], NULL];
                         blocks.splice(key, 2)
                     }
                 }
@@ -697,7 +708,6 @@ export default class Parser {
      * @return string
      */
     parseQuote(lines) {
-        console.log(lines)
         lines.forEach( (line, key) => {
             lines[key] = line.replace(/^\s*> ?/, '')
         })
@@ -1089,5 +1099,3 @@ export default class Parser {
         return this
     }
 }
-var parser = new Parser()
-console.log(parser.makeHtml('>1234\n1234'))
