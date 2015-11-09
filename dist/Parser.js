@@ -274,14 +274,14 @@ var Parser = (function () {
             });
 
             // image
-            var imagePattern1 = /!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/;
+            var imagePattern1 = /!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/g;
             text = text.replace(imagePattern1, function (match, p1, p2) {
                 var escaped = _this.escapeBracket(p1);
                 var url = _this.escapeBracket(p2);
                 return _this.makeHolder('<img src="' + url + '" alt="' + escaped + '" title="' + escaped + '">');
             });
 
-            var imagePattern2 = /!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]/;
+            var imagePattern2 = /!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]/g;
             text = text.replace(imagePattern2, function (match, p1, p2) {
                 var escaped = _this.escapeBracket(p1);
                 var result = '';
@@ -294,14 +294,14 @@ var Parser = (function () {
             });
 
             // link
-            var linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/;
+            var linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/g;
             text = text.replace(linkPattern1, function (match, p1, p2) {
                 var escaped = _this.parseInline(_this.escapeBracket(p1), '', false);
                 var url = _this.escapeBracket(p2);
                 return _this.makeHolder('<a href="' + url + '">' + escaped + '</a>');
             });
 
-            var linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/;
+            var linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/g;
             text = text.replace(linkPattern2, function (match, p1, p2) {
                 var escaped = _this.parseInline(_this.escapeBracket(p1), '', false);
 
@@ -316,13 +316,6 @@ var Parser = (function () {
             });
 
             // strong and em and some fuck
-            // text = text.replace(/(\*{3})(.+?)\1/g, "<strong><em>$2</em></strong>")
-            // text = text.replace(/(\*{2})(.+?)\1/g, "<strong>$2</strong>")
-            // text = text.replace(/(\*)(.+?)\1/g, "<em>$2</em>")
-            // text = text.replace(/(\s+)(_{3})(.+?)\2(\s+)/g, "$1<strong><em>$3</em></strong>$4")
-            // text = text.replace(/(\s+)(_{2})(.+?)\2(\s+)/g, "$1<strong>$3</strong>$4")
-            // text = text.replace(/(\s+)(_)(.+?)\2(\s+)/g, "$1<em>$3</em>$4")
-            // text = text.replace(/(~{2})(.+?)\1/g, "<del>$2</del>")
             text = this.parseInlineCallback(text);
             text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, "<a href=\"mailto:$1\">$1</a>");
 
@@ -1259,4 +1252,7 @@ var Parser = (function () {
 })();
 
 exports['default'] = Parser;
+
+var parser = new Parser();
+console.log(parser.makeHtml('[Genymotion](https://www.genymotion.com/)是。[Genymotion](https://www.genymotion.com/)  [VirtualBox](https://www.virtualbox.org/)富的[付费版](https://shop.genymotion.com/index.php?controller=order-opc)'));
 module.exports = exports['default'];

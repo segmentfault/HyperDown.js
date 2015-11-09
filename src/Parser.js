@@ -217,14 +217,14 @@ export default class Parser {
         })
 
         // image
-        let imagePattern1 = /!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/
+        let imagePattern1 = /!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/g
         text = text.replace(imagePattern1, (match, p1, p2) => {
             let escaped = _this.escapeBracket(p1)
             let url = _this.escapeBracket(p2)
             return _this.makeHolder(`<img src="${url}" alt="${escaped}" title="${escaped}">`)
         })
 
-        let imagePattern2 = /!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]/
+        let imagePattern2 = /!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]/g
         text = text.replace(imagePattern2, (match, p1, p2) => {
             let escaped = _this.escapeBracket(p1)
             let result = ''
@@ -237,14 +237,14 @@ export default class Parser {
         })
 
         // link
-        let linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/
+        let linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/g
         text = text.replace(linkPattern1, (match, p1, p2) => {
             let escaped = _this.parseInline(_this.escapeBracket(p1), '', false)
             let url = _this.escapeBracket(p2)
             return _this.makeHolder(`<a href="${url}">${escaped}</a>`)
         })
 
-        let linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/
+        let linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/g
         text = text.replace(linkPattern2, (match, p1, p2) => {
             let escaped = _this.parseInline(_this.escapeBracket(p1), '', false)
 
@@ -261,13 +261,6 @@ export default class Parser {
         })
 
         // strong and em and some fuck
-        // text = text.replace(/(\*{3})(.+?)\1/g, "<strong><em>$2</em></strong>")
-        // text = text.replace(/(\*{2})(.+?)\1/g, "<strong>$2</strong>")
-        // text = text.replace(/(\*)(.+?)\1/g, "<em>$2</em>")
-        // text = text.replace(/(\s+)(_{3})(.+?)\2(\s+)/g, "$1<strong><em>$3</em></strong>$4")
-        // text = text.replace(/(\s+)(_{2})(.+?)\2(\s+)/g, "$1<strong>$3</strong>$4")
-        // text = text.replace(/(\s+)(_)(.+?)\2(\s+)/g, "$1<em>$3</em>$4")
-        // text = text.replace(/(~{2})(.+?)\1/g, "<del>$2</del>")
         text = this.parseInlineCallback(text)
         text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, "<a href=\"mailto:$1\">$1</a>")
 
