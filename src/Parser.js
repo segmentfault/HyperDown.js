@@ -83,8 +83,7 @@ export default class Parser {
         if (this.footnotes.length > 0) {
             html += '<div class="footnotes"><hr><ol>'
             let index = 1
-            let val = this.footnotes.pop()
-            while (val) {
+            this.footnotes.forEach( val => {
                 if (typeof val === 'string') {
                     val += ` <a href="#fnref-${index}" class="footnote-backref">&#8617;</a>`
                 } else {
@@ -93,10 +92,8 @@ export default class Parser {
                 }
 
                 html += `<li id="fn-${index}">${val}</li>`
-
                 index++
-                val = this.footnotes.pop()
-            }
+            })
             html += '</ol></div>'
         }
         return html
@@ -135,19 +132,20 @@ export default class Parser {
      * @param value
      * @return mixed
      */
-    call (type, ...value) {
+    call (type, value) {
         if (!this.hooks[type]) {
-            return value[0]
+            return value
         }
 
-        let args = value
+        let args = [].slice.call(arguments)
+        args = args.slice(1)
 
         this.hooks[type].forEach (callback => {
-            value = callback(args)
+            value = callback.apply(null, args)
             args[0] = value
         })
 
-        return value[0]
+        return value
     }
 
     /**
@@ -209,11 +207,11 @@ export default class Parser {
             let id = _this.footnotes.indexOf(p1)
 
             if (id === -1) {
-                id = _this.footnotes.length + 1
-                _this.footnotes[id] = this.parseInline(p1, '', false)
+                id = _this.footnotes.length
+                _this.footnotes.push(this.parseInline(p1, '', false))
             }
 
-            return _this.makeHolder(`<sup id="fnref-${id}"><a href="#fn-${id}" class="footnote-ref">${id}</a></sup>`)
+            return _this.makeHolder(`<sup id="fnref-${id+1}"><a href="#fn-${id+1}" class="footnote-ref">${id+1}</a></sup>`)
         })
 
         // image
@@ -608,9 +606,9 @@ export default class Parser {
 
                 if (from === to && lines[from].match(/^\s*$/)
                     && prevBlock && nextBlock) {
-                    if (prevBlock[0] == nextBlock[0] && types.indexOf(prevBlock[0] !== -1)) {
+                    if (prevBlock[0] == nextBlock[0] && types.indexOf(prevBlock[0]) !== -1) {
                         // combine 3 blocks
-                        blocks[key - 1] = [prevBlock[0], prevBlock[1], nextBlock[2], NULL];
+                        blocks[key - 1] = [prevBlock[0], prevBlock[1], nextBlock[2], null];
                         blocks.splice(key, 2)
                     }
                 }
