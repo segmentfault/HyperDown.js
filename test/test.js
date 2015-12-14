@@ -81,8 +81,40 @@ describe('HyperDown.js', function() {
             assert.equal('<table><tbody><tr><td>test</td><td>test</td><tr></tbody></table>', parser.makeHtml('<table><tbody><tr><td>test</td><td>test</td><tr></tbody></table>'));
         });
         it('type2 |', function() {
-            assert.equal('<table><thead><tr><th align="left">Item</th><th>Value</th><th align="right">Qty</th></tr></thead><tbody><tr><td align="left">Computer</td><td>1600 USD</td><td align="right">5</td></tr><tr><td align="left">Phone</td><td>12 USD</td><td align="right">12</td></tr><tr><td align="left">Pipe</td><td>1 USD</td><td align="right">234</td></tr></tbody></table>',
+            assert.equal('<table><thead><tr><th align="left">Item</th><th align="right">Value</th><th align="center">Qty</th></tr></thead><tbody><tr><td align="left">Computer</td><td align="right">1600 USD</td><td align="center">5</td></tr><tr><td align="left">Phone</td><td align="right">12 USD</td><td align="center">12</td></tr><tr><td align="left">Pipe</td><td align="right">1 USD</td><td align="center">234</td></tr></tbody></table>',
                 parser.makeHtml('| Item      |    Value | Qty  |\n| :-------- | --------:| :--: |\n| Computer  | 1600 USD |  5   |\n| Phone     |   12 USD |  12  |\n| Pipe      |    1 USD | 234  |'));
+        });
+        it('table align', function() {
+            assert.equal('<table>\
+<thead>\
+<tr>\
+<th align="left">Left-Aligned</th>\
+<th align="center">Center Aligned</th>\
+<th align="right">Right Aligned</th>\
+</tr>\
+</thead>\
+<tbody>\
+<tr>\
+<td align="left">col 3 is</td>\
+<td align="center">some wordy text</td>\
+<td align="right">$1600</td>\
+</tr>\
+<tr>\
+<td align="left">col 2 is</td>\
+<td align="center">centered</td>\
+<td align="right">$12</td>\
+</tr>\
+<tr>\
+<td align="left">zebra stripes</td>\
+<td align="center">are neat</td>\
+<td align="right">$1</td>\
+</tr>\
+</tbody>\
+</table>', parser.makeHtml('| Left-Aligned  | Center Aligned  | Right Aligned |\n\
+| :------------ |:---------------:| -----:|\n\
+| col 3 is      | some wordy text | $1600 |\n\
+| col 2 is      | centered        |   $12 |\n\
+| zebra stripes | are neat        |    $1 |'));
         });
     });
 
@@ -93,15 +125,16 @@ describe('HyperDown.js', function() {
     });
 
     describe('complex', function() {
-        // it('list + code', function() {
-        //     var codeInList = "1. 1111\n 1111\n 1111\`operator new\` 在分配内存失败的情况下会调用 \`new_handler\` 尝试让系统释放点内存，然后再次尝试申请内存。如果这时系统中内存确实紧张，即使调用。";
-        //     assert.equal('<ol><li><p>1111<br> 1111</p></li></ol>', parser.makeHtml(codeInList));
-        // });
         it('specialhtml', function() {
             assert.equal('<p>&lt;li&gt;asdf</p>', parser.makeHtml('<li>asdf'));
         });
         it('specialHR', function() {
             assert.equal('<pre><code>a</code></pre><hr>', parser.makeHtml('```\na\n```\n---'));
         });
+        it('list + code', function() {
+            var codeInList = "1. 1111\n 1111\n 1111\`operator new\` 在分配内存失败的情况下会调用 \`new_handler\` 尝试让系统释放点内存，然后再次尝试申请内存。如果这时系统中内存确实紧张，即使调用。";
+            assert.equal('<ol><li><p>1111<br> 1111</p></li></ol><p>1111<code>operator new</code> 在分配内存失败的情况下会调用 <code>new_handler</code> 尝试让系统释放点内存，然后再次尝试申请内存。如果这时系统中内存确实紧张，即使调用。</p>', parser.makeHtml(codeInList));
+        });
     });
+
 });

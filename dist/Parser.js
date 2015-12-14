@@ -57,7 +57,11 @@ var Parser = (function () {
         value: function makeHtml(text) {
             text = this.initText(text);
             var html = this.parse(text);
-            return this.makeFootnotes(html);
+            html = this.makeFootnotes(html);
+            if (this.hooks.afterParse) {
+                html = this.call('afterParse', html);
+            }
+            return html;
         }
 
         /**
@@ -110,25 +114,24 @@ var Parser = (function () {
     }, {
         key: 'makeFootnotes',
         value: function makeFootnotes(html) {
-            var _this2 = this;
-
             if (this.footnotes.length > 0) {
-                (function () {
-                    html += '<div class="footnotes"><hr><ol>';
-                    var index = 1;
-                    _this2.footnotes.forEach(function (val) {
-                        if (typeof val === 'string') {
-                            val += ' <a href="#fnref-' + index + '" class="footnote-backref">&#8617;</a>';
-                        } else {
-                            val[val.length - 1] += ' <a href="#fnref-' + index + '" class="footnote-backref">&#8617;</a>';
-                            val = val.length > 1 ? _this2.parse(val.join("\n")) : _this2.parseInline(val[0]);
-                        }
+                html += '<div class="footnotes"><hr><ol>';
+                var index = 1;
+                var val = this.footnotes.shift();
+                while (val) {
+                    if (typeof val === 'string') {
+                        val += ' <a href="#fnref-' + index + '" class="footnote-backref">&#8617;</a>';
+                    } else {
+                        val[val.length - 1] += ' <a href="#fnref-' + index + '" class="footnote-backref">&#8617;</a>';
+                        val = val.length > 1 ? this.parse(val.join("\n")) : this.parseInline(val[0]);
+                    }
 
-                        html += '<li id="fn-' + index + '">' + val + '</li>';
-                        index++;
-                    });
-                    html += '</ol></div>';
-                })();
+                    html += '<li id="fn-' + index + '">' + val + '</li>';
+                    index++;
+                    val = this.footnotes.shift();
+                }
+
+                html += '</ol></div>';
             }
             return html;
         }
@@ -142,7 +145,7 @@ var Parser = (function () {
     }, {
         key: 'parse',
         value: function parse(text) {
-            var _this3 = this;
+            var _this2 = this;
 
             var lines = text.split("\n");
             var blocks = this.parseBlock(text, lines);
@@ -158,16 +161,14 @@ var Parser = (function () {
 
                 var extract = lines.slice(start, end + 1);
                 var method = 'parse' + type.slice(0, 1).toUpperCase() + type.slice(1);
+
                 var beforeMethod = 'beforeParse' + type.slice(0, 1).toUpperCase() + type.slice(1);
-                extract = _this3.call(beforeMethod, extract, value);
-                var result = _this3[method](extract, value);
-                result = _this3.call('after' + method.slice(0, 1).toUpperCase() + method.slice(1), result, value);
+                extract = _this2.call(beforeMethod, extract, value);
+                var result = _this2[method](extract, value);
+                result = _this2.call('after' + method.slice(0, 1).toUpperCase() + method.slice(1), result, value);
 
                 html += result;
             });
-            if (this.hooks.afterParse) {
-                html = this.call('afterParse', html);
-            }
             return html;
         }
 
@@ -229,7 +230,7 @@ var Parser = (function () {
     }, {
         key: 'parseInline',
         value: function parseInline(text) {
-            var _this4 = this;
+            var _this3 = this;
 
             var whiteList = arguments.length <= 1 || arguments[1] === undefined ? '' : arguments[1];
             var clearHolders = arguments.length <= 2 || arguments[2] === undefined ? true : arguments[2];
@@ -243,15 +244,15 @@ var Parser = (function () {
 
             // link
             text = text.replace(/<(https?:\/\/.+)>/ig, function (match, p1) {
-                return _this4.makeHolder('<a href="' + p1 + '">' + p1 + '</a>');
+                return _this3.makeHolder('<a href="' + p1 + '">' + p1 + '</a>');
             });
 
             text = text.replace(/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/ig, function (match, p1, p2, p3) {
-                var whiteLists = _this4.commonWhiteList + '|' + whiteList;
+                var whiteLists = _this3.commonWhiteList + '|' + whiteList;
                 if (whiteLists.toLowerCase().indexOf(p2.toLowerCase()) !== -1) {
-                    return _this4.makeHolder(match);
+                    return _this3.makeHolder(match);
                 } else {
-                    return _this4.htmlspecialchars(match);
+                    return _this3.htmlspecialchars(match);
                 }
             });
 
@@ -265,7 +266,7 @@ var Parser = (function () {
 
                 if (id === -1) {
                     id = _this.footnotes.length;
-                    _this.footnotes.push(_this4.parseInline(p1, '', false));
+                    _this.footnotes.push(_this3.parseInline(p1, '', false));
                 }
 
                 return _this.makeHolder('<sup id="fnref-' + (id + 1) + '"><a href="#fn-' + (id + 1) + '" class="footnote-ref">' + (id + 1) + '</a></sup>');
@@ -337,34 +338,34 @@ var Parser = (function () {
     }, {
         key: 'parseInlineCallback',
         value: function parseInlineCallback(text) {
-            var _this5 = this;
+            var _this4 = this;
 
             text = text.replace(/(\*{3})(.+?)\1/g, function (match, p1, p2) {
-                return '<strong><em>' + _this5.parseInlineCallback(p2) + '</em></strong>';
+                return '<strong><em>' + _this4.parseInlineCallback(p2) + '</em></strong>';
             });
 
             text = text.replace(/(\*{2})(.+?)\1/g, function (match, p1, p2) {
-                return '<strong>' + _this5.parseInlineCallback(p2) + '</strong>';
+                return '<strong>' + _this4.parseInlineCallback(p2) + '</strong>';
             });
 
             text = text.replace(/(\*)(.+?)\1/g, function (match, p1, p2) {
-                return '<em>' + _this5.parseInlineCallback(p2) + '</em>';
+                return '<em>' + _this4.parseInlineCallback(p2) + '</em>';
             });
 
             text = text.replace(/(\s+|^)(_{3})(.+?)\2(\s+|$)/g, function (match, p1, p2, p3, p4) {
-                return p1 + '<strong><em>' + _this5.parseInlineCallback(p3) + '</em></strong>' + p4;
+                return p1 + '<strong><em>' + _this4.parseInlineCallback(p3) + '</em></strong>' + p4;
             });
 
             text = text.replace(/(\s+|^)(_{2})(.+?)\2(\s+|$)/g, function (match, p1, p2, p3, p4) {
-                return p1 + '<strong>' + _this5.parseInlineCallback(p3) + '</strong>' + p4;
+                return p1 + '<strong>' + _this4.parseInlineCallback(p3) + '</strong>' + p4;
             });
 
             text = text.replace(/(\s+|^)(_)(.+?)\2(\s+|$)/g, function (match, p1, p2, p3, p4) {
-                return p1 + '<em>' + _this5.parseInlineCallback(p3) + '</em>' + p4;
+                return p1 + '<em>' + _this4.parseInlineCallback(p3) + '</em>' + p4;
             });
 
             text = text.replace(/(~{2})(.+?)\1/g, function (match, p1, p2) {
-                return '<del>' + _this5.parseInlineCallback(p2) + '</del>';
+                return '<del>' + _this4.parseInlineCallback(p2) + '</del>';
             });
             return text;
         }
@@ -379,7 +380,7 @@ var Parser = (function () {
     }, {
         key: 'parseBlock',
         value: function parseBlock(text, lines) {
-            var _this6 = this;
+            var _this5 = this;
 
             this.blocks = [];
             this.current = 'normal';
@@ -391,7 +392,8 @@ var Parser = (function () {
                 key = parseInt(key); // ES6 的 for key in Array 循环时返回的 key 是字符串，不是 int
                 var line = lines[key];
                 // code block is special
-                if (matches = line.match(/^(\s*)(~|`){3,}([^`~]*)$/i)) {
+                var codeMatches = line.match(/^(\s*)(~|`){3,}([^`~]*)$/i);
+                if (codeMatches) {
                     if (this.isBlock('code')) {
                         var block = this.getBlock();
                         var isAfterList = block[3][2];
@@ -406,9 +408,9 @@ var Parser = (function () {
                         if (this.isBlock('list')) {
                             var block = this.getBlock();
                             var space = block[3];
-                            isAfterList = space > 0 && matches[1].length >= space || matches[1].length > space;
+                            isAfterList = space > 0 && codeMatches[1].length >= space || codeMatches[1].length > space;
                         }
-                        this.startBlock('code', key, [matches[1], matches[3], isAfterList]);
+                        this.startBlock('code', key, [codeMatches[1], codeMatches[3], isAfterList]);
                     }
                     continue;
                 } else if (this.isBlock('code')) {
@@ -419,15 +421,17 @@ var Parser = (function () {
                 // html block is special too
                 var htmlPattern1 = new RegExp('^\s*<(' + special + ')(\s+[^>]*)?>', 'i');
                 var htmlPattern2 = new RegExp('<\/(' + special + ')>\s*$', 'i');
-                if (matches = line.match(htmlPattern1)) {
-                    var tag = matches[1].toLowerCase();
+                var htmlMatches1 = line.match(htmlPattern1);
+                var htmlMatches2 = line.match(htmlPattern2);
+                if (htmlMatches1) {
+                    var tag = htmlMatches1[1].toLowerCase();
                     if (!this.isBlock('html', tag) && !this.isBlock('pre')) {
                         this.startBlock('html', key, tag);
                     }
 
                     continue;
-                } else if (matches = line.match(htmlPattern2)) {
-                    var tag = matches[1].toLowerCase();
+                } else if (htmlMatches2) {
+                    var tag = htmlMatches2[1].toLowerCase();
 
                     if (this.isBlock('html', tag)) {
                         this.setBlock(key).endBlock();
@@ -494,14 +498,14 @@ var Parser = (function () {
                         var tableMatches = /^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+)|(?:(?:[ :]*\-[ :]*)+(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/g.exec(line);
                         if (this.isBlock('normal')) {
                             (function () {
-                                var block = _this6.getBlock();
+                                var block = _this5.getBlock();
                                 var head = false;
 
                                 if (block.length === 0 || block[0] !== 'normal' || /^\s*$/.test(lines[block[2]])) {
-                                    _this6.startBlock('table', key);
+                                    _this5.startBlock('table', key);
                                 } else {
                                     head = true;
-                                    _this6.backBlock(1, 'table');
+                                    _this5.backBlock(1, 'table');
                                 }
 
                                 if (tableMatches[1][0] == '|') {
@@ -512,13 +516,13 @@ var Parser = (function () {
                                     }
                                 }
 
-                                var rows = tableMatches[1].split(/(\+|\|)/);
+                                var rows = tableMatches[1].split(/[\+|\|]/);
                                 var aligns = [];
                                 rows.forEach(function (row) {
                                     var align = 'none';
-
-                                    if (tableMatches = row.match(/^\s*(:?)\-+(:?)\s*$/)) {
-                                        if (tableMatches[1] && tableMatches[2]) {
+                                    var tableMatches = row.match(/^\s*(:?)\-+(:?)\s*$/);
+                                    if (tableMatches) {
+                                        if (tableMatches[1] == tableMatches[2]) {
                                             align = 'center';
                                         } else if (tableMatches[1]) {
                                             align = 'left';
@@ -530,7 +534,7 @@ var Parser = (function () {
                                     aligns.push(align);
                                 });
 
-                                _this6.setBlock(key, [head, aligns]);
+                                _this5.setBlock(key, [head, aligns]);
                             })();
                         }
                         break;
@@ -614,7 +618,7 @@ var Parser = (function () {
                                 }
 
                                 emptyCount++;
-                            } else if ($emptyCount == 0) {
+                            } else if (emptyCount == 0) {
                                 this.setBlock(key);
                             } else {
                                 this.startBlock('normal', key);
@@ -722,10 +726,10 @@ var Parser = (function () {
     }, {
         key: 'parsePre',
         value: function parsePre(lines) {
-            var _this7 = this;
+            var _this6 = this;
 
             lines.forEach(function (line, ind) {
-                lines[ind] = _this7.htmlspecialchars(line.substr(4));
+                lines[ind] = _this6.htmlspecialchars(line.substr(4));
             });
             var str = lines.join('\n');
 
@@ -797,7 +801,7 @@ var Parser = (function () {
     }, {
         key: 'parseList',
         value: function parseList(lines) {
-            var _this8 = this;
+            var _this7 = this;
 
             var html = '';
             var minSpace = 99999;
@@ -844,7 +848,7 @@ var Parser = (function () {
                         leftLines.push(line.replace(pattern, ''));
                     } else {
                         if (leftLines.length) {
-                            html += "<li>" + _this8.parse(leftLines.join("\n")) + "</li>";
+                            html += "<li>" + _this7.parse(leftLines.join("\n")) + "</li>";
                         }
                         if (lastType !== type) {
                             if (lastType.length) {
@@ -878,7 +882,7 @@ var Parser = (function () {
     }, {
         key: 'parseTable',
         value: function parseTable(lines, value) {
-            var _this9 = this;
+            var _this8 = this;
 
             var _value = _slicedToArray(value, 2);
 
@@ -957,7 +961,7 @@ var Parser = (function () {
                         html += ' align="' + aligns[key] + '"';
                     }
 
-                    html += '>' + _this9.parseInline(text) + ('</' + tag + '>');
+                    html += '>' + _this8.parseInline(text) + ('</' + tag + '>');
                 });
 
                 html += '</tr>';
@@ -970,9 +974,9 @@ var Parser = (function () {
             };
 
             for (var key in lines) {
-                var _ret3 = _loop(key);
+                var _ret2 = _loop(key);
 
-                if (_ret3 === 'continue') continue;
+                if (_ret2 === 'continue') continue;
             }
 
             if (body !== null) {
@@ -1003,10 +1007,10 @@ var Parser = (function () {
     }, {
         key: 'parseNormal',
         value: function parseNormal(lines) {
-            var _this10 = this;
+            var _this9 = this;
 
             lines = lines.map(function (line) {
-                return _this10.parseInline(line);
+                return _this9.parseInline(line);
             });
 
             var str = lines.join("\n").trim();
@@ -1027,11 +1031,7 @@ var Parser = (function () {
     }, {
         key: 'parseFootnote',
         value: function parseFootnote(lines, value) {
-            var _value2 = _slicedToArray(value, 2);
-
-            var space = _value2[0];
-            var note = _value2[1];
-
+            var note = value[1];
             var index = this.footnotes.indexOf(note);
             if (-1 !== index) {
                 if (lines[0]) {
@@ -1064,10 +1064,10 @@ var Parser = (function () {
     }, {
         key: 'parseHtml',
         value: function parseHtml(lines, type) {
-            var _this11 = this;
+            var _this10 = this;
 
             lines.forEach(function (line) {
-                line = _this11.parseInline(line, _this11.specialWhiteList[type] ? _this11.specialWhiteList[type] : '');
+                line = _this10.parseInline(line, _this10.specialWhiteList[type] ? _this10.specialWhiteList[type] : '');
             });
 
             return lines.join("\n");

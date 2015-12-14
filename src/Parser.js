@@ -35,7 +35,11 @@ export default class Parser {
     makeHtml (text) {
         text = this.initText(text)
         let html = this.parse(text)
-        return this.makeFootnotes(html)
+        html = this.makeFootnotes(html)
+        if (this.hooks.afterParse) {
+            html = this.call('afterParse', html)
+        }
+        return html;
     }
 
     /**
@@ -83,7 +87,8 @@ export default class Parser {
         if (this.footnotes.length > 0) {
             html += '<div class="footnotes"><hr><ol>'
             let index = 1
-            this.footnotes.forEach( val => {
+            let val = this.footnotes.shift()
+            while(val) {
                 if (typeof val === 'string') {
                     val += ` <a href="#fnref-${index}" class="footnote-backref">&#8617;</a>`
                 } else {
@@ -93,7 +98,9 @@ export default class Parser {
 
                 html += `<li id="fn-${index}">${val}</li>`
                 index++
-            })
+                val = this.footnotes.shift()
+            }
+
             html += '</ol></div>'
         }
         return html
@@ -114,6 +121,7 @@ export default class Parser {
             let [type, start, end, value] = block
             let extract = lines.slice(start, end + 1)
             let method = 'parse' + type.slice(0,1).toUpperCase() + type.slice(1)
+
             let beforeMethod = 'beforeParse' + type.slice(0,1).toUpperCase() + type.slice(1)
             extract = this.call(beforeMethod, extract, value)
             let result = this[method](extract, value)
@@ -121,9 +129,6 @@ export default class Parser {
 
             html += result
         })
-        if (this.hooks.afterParse) {
-            html = this.call('afterParse', html)
-        }
         return html
     }
 
@@ -329,7 +334,8 @@ export default class Parser {
             key = parseInt(key) // ES6 的 for key in Array 循环时返回的 key 是字符串，不是 int
             let line = lines[key]
             // code block is special
-            if (matches = line.match(/^(\s*)(~|`){3,}([^`~]*)$/i)) {
+            let codeMatches = line.match(/^(\s*)(~|`){3,}([^`~]*)$/i)
+            if (codeMatches) {
                 if (this.isBlock('code')) {
                     let block = this.getBlock()
                     let isAfterList = block[3][2]
@@ -346,10 +352,10 @@ export default class Parser {
                     if (this.isBlock('list')) {
                         let block = this.getBlock()
                         let space = block[3]
-                        isAfterList = (space > 0 && matches[1].length >= space)
-                            || matches[1].length > space
+                        isAfterList = (space > 0 && codeMatches[1].length >= space)
+                            || codeMatches[1].length > space
                     }
-                    this.startBlock('code', key, [matches[1], matches[3], isAfterList])
+                    this.startBlock('code', key, [codeMatches[1], codeMatches[3], isAfterList])
                 }
                 continue
             } else if (this.isBlock('code')) {
@@ -360,15 +366,17 @@ export default class Parser {
             // html block is special too
             let htmlPattern1 = new RegExp('^\s*<(' + special + ')(\s+[^>]*)?>', 'i')
             let htmlPattern2 = new RegExp('<\/(' + special+ ')>\s*$', 'i')
-            if (matches = line.match(htmlPattern1)) {
-                let tag = matches[1].toLowerCase()
+            let htmlMatches1 = line.match(htmlPattern1)
+            let htmlMatches2 = line.match(htmlPattern2)
+            if (htmlMatches1) {
+                let tag = htmlMatches1[1].toLowerCase()
                 if (!this.isBlock('html', tag) && !this.isBlock('pre')) {
                     this.startBlock('html', key, tag)
                 }
 
                 continue
-            } else if (matches = line.match(htmlPattern2)) {
-                let tag = matches[1].toLowerCase()
+            } else if (htmlMatches2) {
+                let tag = htmlMatches2[1].toLowerCase()
 
                 if (this.isBlock('html', tag)) {
                     this.setBlock(key)
@@ -454,13 +462,13 @@ export default class Parser {
                             }
                         }
 
-                        let rows = tableMatches[1].split(/(\+|\|)/)
+                        let rows = tableMatches[1].split(/[\+|\|]/)
                         let aligns = []
                         rows.forEach( row => {
                             let align = 'none'
-
-                            if (tableMatches = row.match(/^\s*(:?)\-+(:?)\s*$/)) {
-                                if (tableMatches[1] && tableMatches[2]) {
+                            let tableMatches = row.match(/^\s*(:?)\-+(:?)\s*$/)
+                            if (tableMatches) {
+                                if (tableMatches[1] == tableMatches[2]) {
                                     align = 'center'
                                 } else if (tableMatches[1]) {
                                     align = 'left'
@@ -471,7 +479,7 @@ export default class Parser {
 
                             aligns.push(align)
                         })
-
+                        
                         this.setBlock(key, [head, aligns])
                     }
                     break
@@ -556,7 +564,7 @@ export default class Parser {
                             }
 
                             emptyCount ++
-                        } else if ($emptyCount == 0) {
+                        } else if (emptyCount == 0) {
                             this.setBlock(key)
                         } else {
                             this.startBlock('normal', key)
@@ -909,7 +917,7 @@ export default class Parser {
      * @return string
      */
     parseFootnote(lines, value) {
-        let [space, note] = value
+        let note = value[1]
         let index = this.footnotes.indexOf(note)
         if (-1 !== index) {
             if(lines[0]) {
