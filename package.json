@@ -1,8 +1,12 @@
 {
   "name": "hyperdown",
   "description": "Markdown解析器",
-  "repository": "https://github.com/SegmentFault/HyperDown.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SegmentFault/HyperDown.js.git"
+  },
   "license": "BSD-4-Clause",
+  "author": "SegmentFault",
   "version": "0.1.7",
   "devDependencies": {
     "babel": "^5.8.22",
@@ -21,6 +25,7 @@
   "bugs": {
     "url": "https://github.com/SegmentFault/HyperDown.js/issues"
   },
+  "homepage": "https://github.com/SegmentFault/HyperDown.js#readme",
   "dependencies": {
     "md5": "^2.0.0"
   }
