@@ -1280,3 +1280,4 @@ var Parser = (function () {
 })();
 
 exports.default = Parser;
+module.exports = exports['default'];
