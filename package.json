@@ -7,7 +7,7 @@
   },
   "license": "BSD-4-Clause",
   "author": "SegmentFault",
-  "version": "0.1.7",
+  "version": "1.0.0",
   "devDependencies": {
     "babel": "^5.8.22",
     "babel-core": "^5.8.22",
