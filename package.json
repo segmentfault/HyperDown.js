@@ -21,12 +21,13 @@
     "build": "webpack --progress --colors",
     "watch": "webpack --progress --colors --watch"
   },
-  "main": "dist/sdk.js",
+  "main": "dist/Parser.js",
   "bugs": {
     "url": "https://github.com/SegmentFault/HyperDown.js/issues"
   },
   "homepage": "https://github.com/SegmentFault/HyperDown.js#readme",
   "dependencies": {
+    "babel-polyfill": "^6.3.14",
     "md5": "^2.0.0"
   }
 }

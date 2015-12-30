@@ -1,30 +1,28 @@
-/**
- * Parser in ECMAScript 6
- *
- * @copyright Copyright (c) 2012 SegmentFault Team. (http://segmentfault.com)
- * @author Integ <integ@segmentfault.com>
- * @license BSD License
- */
-
 'use strict';
 
-Object.defineProperty(exports, '__esModule', {
+var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })(); /**
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        * Parser in ECMAScript 6
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        *
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        * @copyright Copyright (c) 2012 SegmentFault Team. (http://segmentfault.com)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        * @author Integ <integ@segmentfault.com>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        * @license BSD License
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        */
+
+Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
+require('babel-polyfill');
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+var _md = require('md5');
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+var _md2 = _interopRequireDefault(_md);
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-require('babel-core/polyfill');
-
-var _md5 = require('md5');
-
-var _md52 = _interopRequireDefault(_md5);
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Parser = (function () {
     function Parser() {
@@ -41,7 +39,7 @@ var Parser = (function () {
         this.definitions = [];
         this.hooks = {};
         this.holders = new Map();
-        this.uniqid = (0, _md52['default'])(new Date().getTime());
+        this.uniqid = (0, _md2.default)(new Date().getTime());
         this.id = 0;
     }
 
@@ -68,6 +66,7 @@ var Parser = (function () {
          * @param type
          * @param callback
          */
+
     }, {
         key: 'hook',
         value: function hook(type, callback) {
@@ -82,6 +81,7 @@ var Parser = (function () {
          * @param str
          * @return string
          */
+
     }, {
         key: 'makeHolder',
         value: function makeHolder(str) {
@@ -95,6 +95,7 @@ var Parser = (function () {
          * @param text
          * @return mixed
          */
+
     }, {
         key: 'initText',
         value: function initText(text) {
@@ -111,6 +112,7 @@ var Parser = (function () {
          * @param html
          * @return string
          */
+
     }, {
         key: 'makeFootnotes',
         value: function makeFootnotes(html) {
@@ -142,6 +144,7 @@ var Parser = (function () {
          * @param string text
          * @return string
          */
+
     }, {
         key: 'parse',
         value: function parse(text) {
@@ -177,6 +180,7 @@ var Parser = (function () {
          * @param value
          * @return mixed
          */
+
     }, {
         key: 'call',
         value: function call(type, value) {
@@ -200,6 +204,7 @@ var Parser = (function () {
          * @param clearHolders
          * @return string
          */
+
     }, {
         key: 'releaseHolder',
         value: function releaseHolder(text) {
@@ -227,6 +232,7 @@ var Parser = (function () {
          * @param bool clearHolders
          * @return string
          */
+
     }, {
         key: 'parseInline',
         value: function parseInline(text) {
@@ -335,6 +341,7 @@ var Parser = (function () {
          * @param text
          * @return mixed
          */
+
     }, {
         key: 'parseInlineCallback',
         value: function parseInlineCallback(text) {
@@ -377,6 +384,7 @@ var Parser = (function () {
          * @param array lines
          * @return array
          */
+
     }, {
         key: 'parseBlock',
         value: function parseBlock(text, lines) {
@@ -547,7 +555,7 @@ var Parser = (function () {
                         break;
 
                     // multi heading
-                    case /^\s*((=|-){2,})\s*$/.test(line) && (this.getBlock() && this.getBlock()[0] === 'normal' && !/^\s*$/.test(lines[this.getBlock()[2]])):
+                    case /^\s*((=|-){2,})\s*$/.test(line) && this.getBlock() && this.getBlock()[0] === 'normal' && !/^\s*$/.test(lines[this.getBlock()[2]]):
                         // check if last line isn't empty
                         var multiHeadingMatches = line.match(/^\s*((=|-){2,})\s*$/);
                         if (this.isBlock('normal')) {
@@ -643,6 +651,7 @@ var Parser = (function () {
          * @param array lines
          * @return array
          */
+
     }, {
         key: 'optimizeBlocks',
         value: function optimizeBlocks(blocks, lines) {
@@ -692,6 +701,7 @@ var Parser = (function () {
          * @param string lang
          * @return string
          */
+
     }, {
         key: 'parseCode',
         value: function parseCode(lines, parts) {
@@ -723,6 +733,7 @@ var Parser = (function () {
          * @param array lines
          * @return string
          */
+
     }, {
         key: 'parsePre',
         value: function parsePre(lines) {
@@ -744,6 +755,7 @@ var Parser = (function () {
          * @param int num
          * @return string
          */
+
     }, {
         key: 'parseSh',
         value: function parseSh(lines, num) {
@@ -763,6 +775,7 @@ var Parser = (function () {
          * @param int num
          * @return string
          */
+
     }, {
         key: 'parseMh',
         value: function parseMh(lines, num) {
@@ -781,6 +794,7 @@ var Parser = (function () {
          * @param array lines
          * @return string
          */
+
     }, {
         key: 'parseQuote',
         value: function parseQuote(lines) {
@@ -798,6 +812,7 @@ var Parser = (function () {
          * @param array lines
          * @return string
          */
+
     }, {
         key: 'parseList',
         value: function parseList(lines) {
@@ -879,6 +894,7 @@ var Parser = (function () {
          * @param array value
          * @return string
          */
+
     }, {
         key: 'parseTable',
         value: function parseTable(lines, value) {
@@ -894,7 +910,7 @@ var Parser = (function () {
             var html = '<table>';
             var body = false;
 
-            var _loop = function (key) {
+            var _loop = function _loop(key) {
                 var line = lines[key];
                 if (parseInt(key) === ignore) {
                     head = false;
@@ -992,6 +1008,7 @@ var Parser = (function () {
          *
          * @return string
          */
+
     }, {
         key: 'parseHr',
         value: function parseHr() {
@@ -1004,6 +1021,7 @@ var Parser = (function () {
          * @param array lines
          * @return string
          */
+
     }, {
         key: 'parseNormal',
         value: function parseNormal(lines) {
@@ -1028,6 +1046,7 @@ var Parser = (function () {
          * @param array value
          * @return string
          */
+
     }, {
         key: 'parseFootnote',
         value: function parseFootnote(lines, value) {
@@ -1048,6 +1067,7 @@ var Parser = (function () {
          *
          * @return string
          */
+
     }, {
         key: 'parseDefinition',
         value: function parseDefinition() {
@@ -1061,6 +1081,7 @@ var Parser = (function () {
          * @param string type
          * @return string
          */
+
     }, {
         key: 'parseHtml',
         value: function parseHtml(lines, type) {
@@ -1077,6 +1098,7 @@ var Parser = (function () {
          * @param str
          * @return mixed
          */
+
     }, {
         key: 'escapeBracket',
         value: function escapeBracket(str) {
@@ -1097,6 +1119,7 @@ var Parser = (function () {
          * @param mixed value
          * @return this
          */
+
     }, {
         key: 'startBlock',
         value: function startBlock(type, start) {
@@ -1114,6 +1137,7 @@ var Parser = (function () {
          *
          * @return this
          */
+
     }, {
         key: 'endBlock',
         value: function endBlock() {
@@ -1128,6 +1152,7 @@ var Parser = (function () {
          * @param mixed value
          * @return bool
          */
+
     }, {
         key: 'isBlock',
         value: function isBlock(type) {
@@ -1141,6 +1166,7 @@ var Parser = (function () {
          *
          * @return array
          */
+
     }, {
         key: 'getBlock',
         value: function getBlock() {
@@ -1154,6 +1180,7 @@ var Parser = (function () {
          * @param mixed value
          * @return this
          */
+
     }, {
         key: 'setBlock',
         value: function setBlock() {
@@ -1179,6 +1206,7 @@ var Parser = (function () {
          * @param mixed value
          * @return this
          */
+
     }, {
         key: 'backBlock',
         value: function backBlock(step, type) {
@@ -1207,6 +1235,7 @@ var Parser = (function () {
          * @param text
          * @return string
          */
+
     }, {
         key: 'htmlspecialchars',
         value: function htmlspecialchars(text) {
@@ -1226,6 +1255,7 @@ var Parser = (function () {
         /**
          * @return this
          */
+
     }, {
         key: 'combineBlock',
         value: function combineBlock() {
@@ -1249,5 +1279,4 @@ var Parser = (function () {
     return Parser;
 })();
 
-exports['default'] = Parser;
-module.exports = exports['default'];
+exports.default = Parser;
