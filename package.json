@@ -16,14 +16,13 @@
     "babel-plugin-add-module-exports": "^0.1.2",
     "babel-preset-es2015": "^6.3.13",
     "lodash": "^3.10.1",
-    "mocha": "^2.3.3",
-    "webpack": "^1.11.0"
+    "mocha": "^2.3.3"
   },
   "scripts": {
     "test": "mocha",
-    "build": "babel src/Parser.js -o dist/Parser.js"
+    "build": "babel src/Parser.js -o hyperdown.js"
   },
-  "main": "dist/Parser.js",
+  "main": "hyperdown.js",
   "bugs": {
     "url": "https://github.com/SegmentFault/HyperDown.js/issues"
   },
