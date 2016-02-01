@@ -1,5 +1,6 @@
 var assert = require("assert");
-var Parser = require("../dist/Parser.js");
+var Parser = require("../dist/Parser.js").default;
+console.log(Parser);
 var parser = new Parser();
 
 describe('HyperDown.js', function() {
@@ -30,10 +31,10 @@ describe('HyperDown.js', function() {
 
     describe('list', function() {
         it('ul', function() {
-            assert.equal('<ul><li><p>list</p></li></ul>', parser.makeHtml('\n\n - list'));
+            assert.equal('<ul><li><p>list</p></li><li><p>list</p></li></ul>', parser.makeHtml('\n\n- list\n- list'));
         });
         it('ol', function() {
-            assert.equal('<ol><li><p>list</p></li></ol>', parser.makeHtml('1. list'));
+            assert.equal('<ol><li><p>list</p></li><li><p>list</p></li></ol>', parser.makeHtml('\n\n1. list\n2. list'));
         });
     });
 
