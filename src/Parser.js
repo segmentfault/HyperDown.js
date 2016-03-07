@@ -318,7 +318,7 @@ export default class Parser {
         text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, "<a href=\"mailto:$1\">$1</a>");
 
         // autolink url
-        text = text.replace(/(^|[^"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^"])/ig, "$1<a href=\"$2\">$2</a>$4");
+        text = text.replace(/(^|[^"])((http|https|ftp|mailto):[\u4e00-\u9fa5_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^"])/ig, "$1<a href=\"$2\">$2</a>$4");
 
         text = this.call('afterParseInlineBeforeRelease', text);
         text = this.releaseHolder(text, clearHolders);
