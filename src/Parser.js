@@ -231,7 +231,7 @@ export default class Parser {
      * @param bool clearHolders
      * @return string
      */
-    parseInline(text, whiteList = '', clearHolders = true) {
+    parseInline(text, whiteList = '', clearHolders = true,enableAutoLink = true) {
         text = this.call('beforeParseInline', text);
         let _this = this;
         
@@ -294,14 +294,14 @@ export default class Parser {
         // link
         let linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/g;
         text = text.replace(linkPattern1, (match, p1, p2) => {
-            let escaped = _this.parseInline(_this.escapeBracket(p1), '', false);
+            let escaped = _this.parseInline(_this.escapeBracket(p1), '', false, false);
             let url = _this.escapeBracket(p2);
             return _this.makeHolder(`<a href="${ url }">${ escaped }</a>`);
         });
 
         let linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/g;
         text = text.replace(linkPattern2, (match, p1, p2) => {
-            let escaped = _this.parseInline(_this.escapeBracket(p1), '', false);
+            let escaped = _this.parseInline(_this.escapeBracket(p1), '', false, false);
 
             let result = _this.definitions[p2] ? `<a href="${ _this.definitions[p2] }">${ escaped }</a>` : escaped;
 
@@ -318,12 +318,15 @@ export default class Parser {
         text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, "<a href=\"mailto:$1\">$1</a>");
 
         // autolink url
-        text = text.replace(/(^|[^"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^"])/ig, "$1<a href=\"$2\">$2</a>$4");
+        if(enableAutoLink){
+            text = text.replace(/(^|[^"])((http|https|ftp|mailto):[\u4e00-\u9fa5_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^"])/ig, "$1<a href=\"$2\">$2</a>$4");
 
-        text = this.call('afterParseInlineBeforeRelease', text);
-        text = this.releaseHolder(text, clearHolders);
+            text = this.call('afterParseInlineBeforeRelease', text);
+            text = this.releaseHolder(text, clearHolders);
 
-        text = this.call('afterParseInline', text);
+            text = this.call('afterParseInline', text);
+        }
+
 
         return text;
     }
