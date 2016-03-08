@@ -321,8 +321,8 @@ export default class Parser {
         if(enableAutoLink){
             text = text.replace(/(^|[^"])((http|https|ftp|mailto):[\u4e00-\u9fa5_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^"])/ig, "$1<a href=\"$2\">$2</a>$4");
 
-            text = this.call('afterParseInlineBeforeRelease', text);
-            text = this.releaseHolder(text, clearHolders);
+        text = this.call('afterParseInlineBeforeRelease', text);
+        text = this.releaseHolder(text, clearHolders);
 
             text = this.call('afterParseInline', text);
         }
