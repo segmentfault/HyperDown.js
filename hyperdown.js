@@ -284,10 +284,12 @@ var Parser = function () {
     }, {
         key: 'parseInline',
         value: function parseInline(text) {
+            var whiteList = arguments.length <= 1 || arguments[1] === undefined ? '' : arguments[1];
+
             var _this3 = this;
 
-            var whiteList = arguments.length <= 1 || arguments[1] === undefined ? '' : arguments[1];
             var clearHolders = arguments.length <= 2 || arguments[2] === undefined ? true : arguments[2];
+            var enableAutoLink = arguments.length <= 3 || arguments[3] === undefined ? true : arguments[3];
 
             text = this.call('beforeParseInline', text);
             var _this = this;
@@ -351,14 +353,14 @@ var Parser = function () {
             // link
             var linkPattern1 = /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/g;
             text = text.replace(linkPattern1, function (match, p1, p2) {
-                var escaped = _this.parseInline(_this.escapeBracket(p1), '', false);
+                var escaped = _this.parseInline(_this.escapeBracket(p1), '', false, false);
                 var url = _this.escapeBracket(p2);
                 return _this.makeHolder('<a href="' + url + '">' + escaped + '</a>');
             });
 
             var linkPattern2 = /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/g;
             text = text.replace(linkPattern2, function (match, p1, p2) {
-                var escaped = _this.parseInline(_this.escapeBracket(p1), '', false);
+                var escaped = _this.parseInline(_this.escapeBracket(p1), '', false, false);
 
                 var result = _this.definitions[p2] ? '<a href="' + _this.definitions[p2] + '">' + escaped + '</a>' : escaped;
 
@@ -375,12 +377,14 @@ var Parser = function () {
             text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, "<a href=\"mailto:$1\">$1</a>");
 
             // autolink url
-            text = text.replace(/(^|[^"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^"])/ig, "$1<a href=\"$2\">$2</a>$4");
+            if (enableAutoLink) {
+                text = text.replace(/(^|[^"])((http|https|ftp|mailto):[\u4e00-\u9fa5_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^"])/ig, "$1<a href=\"$2\">$2</a>$4");
 
-            text = this.call('afterParseInlineBeforeRelease', text);
-            text = this.releaseHolder(text, clearHolders);
+                text = this.call('afterParseInlineBeforeRelease', text);
+                text = this.releaseHolder(text, clearHolders);
 
-            text = this.call('afterParseInline', text);
+                text = this.call('afterParseInline', text);
+            }
 
             return text;
         }
