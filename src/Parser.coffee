@@ -5,6 +5,9 @@ class Parser
     ucfirst = (str) ->
         (str.charAt 0).toUpperCase() + str.substring 1
 
+
+    preg_quote = (str) -> str.replace /[-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"
+
     
     str_replace = (search, replace, str) ->
         if search instanceof Array
@@ -15,7 +18,7 @@ class Parser
                 for val in search
                     str = str_replace val, replace, str
         else
-            search = search.replace /([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1"
+            search = preg_quote search
             str = str.replace (new RegExp search, 'g'), replace
 
         str
@@ -34,7 +37,7 @@ class Parser
             search = ''
             for i in [0..ch.length - 1]
                 c = ch[i]
-                c = c.replace /([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1"
+                c = preg_quote c
                 search += c
 
             search = '[' + search + ']*'
@@ -46,17 +49,21 @@ class Parser
 
 
     array_keys = (arr) ->
+        result = []
         if arr instanceof Array
-            k for _, k in arr
+            result.push k for _, k in arr
         else
-            k for k of arr
+            result.push k for k of arr
+        result
 
 
     array_values = (arr) ->
+        result = []
         if arr instanceof Array
-            v for v in arr
+            result.push v for v in arr
         else
-            v for _, v of arr
+            result.push v for _, v of arr
+        result
     
     # end php function wrappers
 
@@ -156,29 +163,29 @@ class Parser
     releaseHolder: (text, clearHolders = yes) ->
         deep = 0
 
-        while (text.indexOf "|\r" >= 0) and deep < 10
+        while (text.indexOf "|\r") >= 0 and deep < 10
             text = str_replace (array_keys @holders), (array_values @holders), text
             deep += 1
 
-        @holders = [] if clearHolders
+        @holders = {} if clearHolders
         text
 
 
     # parse inline
-    parseInline: (text, whiteList = '', clearHolders = yes) ->
+    parseInline: (text, whiteList = '', clearHolders = yes, enableAutoLink = yes) ->
         text = @call 'beforeParseInline', text
 
         # code
-        text = text.replace /(^|[^\\])(`+)(.+?)\2/g, (matches...) =>
+        text = text.replace /(^|[^\\])(`+)(.+?)\2/mg, (matches...) =>
             matches[1] + @makeHolder '<code>' + (htmlspecialchars matches[3]) + '</code>'
-
+        
         # link
         text = text.replace /<(https?:\/\/.+)>/ig, (matches...) =>
             @makeHolder "<a href=\"#{matches[1]}\">#{matches[1]}</a>"
 
         # encode unsafe tags
         text = text.replace /<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/ig, (matches...) =>
-            if ((@commonWhiteList + '|' + whiteList).indexOf matches[2]) >= 0
+            if (('|' + @commonWhiteList + '|' + whiteList + '|').indexOf '|' + matches[2].toLowerCase() + '|') >= 0
                 @makeHolder matches[0]
             else
                 htmlspecialchars matches[0]
@@ -191,7 +198,7 @@ class Parser
 
             if id < 0
                 id = @footnotes.length + 1
-                @footnotes[id] = @parseInline matches[1], '', no
+                @footnotes.push @parseInline matches[1], '', no
 
             @makeHolder "<sup id=\"fnref-#{id}\"><a href=\"#fn-#{id}\" class=\"footnote-ref\">#{id}</a></sup>"
 
@@ -210,12 +217,12 @@ class Parser
 
         # link
         text = text.replace /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/g, (matches...) =>
-            escaped = @parseInline (@escapeBracket matches[1]), '', no
+            escaped = @parseInline (@escapeBracket matches[1]), '', no, no
             url = @escapeBracket matches[2]
             @makeHolder "<a href=\"#{url}\">#{escaped}</a>"
 
         text = text.replace /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/g, (matches...) =>
-            escaped = @parseInline (@escapeBracket matches[1]), '', no
+            escaped = @parseInline (@escapeBracket matches[1]), '', no, no
 
             result = if @definitions[matches[2]]? then "<a href=\"#{@definitions[matches[2]]}\">#{escaped}</a>" else escaped
 
@@ -230,7 +237,7 @@ class Parser
         text = text.replace /<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, '<a href="mailto:$1">$1</a>'
 
         # autolink url
-        text = text.replace /(^|[^\"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/ig, '$1<a href="$2">$2</a>$4'
+        text = text.replace /(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/ig, '$1<a href="$2">$2</a>$4'
 
         text = @call 'afterParseInlineBeforeRelease', text
         text = @releaseHolder text, clearHolders

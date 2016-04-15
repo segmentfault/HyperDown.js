@@ -4,10 +4,14 @@
     slice = [].slice;
 
   Parser = (function() {
-    var array_keys, array_values, htmlspecialchars, str_replace, trim, ucfirst;
+    var array_keys, array_values, htmlspecialchars, preg_quote, str_replace, trim, ucfirst;
 
     ucfirst = function(str) {
       return (str.charAt(0)).toUpperCase() + str.substring(1);
+    };
+
+    preg_quote = function(str) {
+      return str.replace(/[-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
     };
 
     str_replace = function(search, replace, str) {
@@ -25,7 +29,7 @@
           }
         }
       } else {
-        search = search.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+        search = preg_quote(search);
         str = str.replace(new RegExp(search, 'g'), replace);
       }
       return str;
@@ -44,7 +48,7 @@
         search = '';
         for (i = j = 0, ref = ch.length - 1; 0 <= ref ? j <= ref : j >= ref; i = 0 <= ref ? ++j : --j) {
           c = ch[i];
-          c = c.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+          c = preg_quote(c);
           search += c;
         }
         search = '[' + search + ']*';
@@ -55,40 +59,36 @@
     };
 
     array_keys = function(arr) {
-      var _, j, k, len, results, results1;
+      var _, j, k, len, result;
+      result = [];
       if (arr instanceof Array) {
-        results = [];
         for (k = j = 0, len = arr.length; j < len; k = ++j) {
           _ = arr[k];
-          results.push(k);
+          result.push(k);
         }
-        return results;
       } else {
-        results1 = [];
         for (k in arr) {
-          results1.push(k);
+          result.push(k);
         }
-        return results1;
       }
+      return result;
     };
 
     array_values = function(arr) {
-      var _, j, len, results, results1, v;
+      var _, j, len, result, v;
+      result = [];
       if (arr instanceof Array) {
-        results = [];
         for (j = 0, len = arr.length; j < len; j++) {
           v = arr[j];
-          results.push(v);
+          result.push(v);
         }
-        return results;
       } else {
-        results1 = [];
         for (_ in arr) {
           v = arr[_];
-          results1.push(v);
+          result.push(v);
         }
-        return results1;
       }
+      return result;
     };
 
     function Parser() {
@@ -190,25 +190,28 @@
         clearHolders = true;
       }
       deep = 0;
-      while ((text.indexOf("|\r" >= 0)) && deep < 10) {
+      while ((text.indexOf("|\r")) >= 0 && deep < 10) {
         text = str_replace(array_keys(this.holders), array_values(this.holders), text);
         deep += 1;
       }
       if (clearHolders) {
-        this.holders = [];
+        this.holders = {};
       }
       return text;
     };
 
-    Parser.prototype.parseInline = function(text, whiteList, clearHolders) {
+    Parser.prototype.parseInline = function(text, whiteList, clearHolders, enableAutoLink) {
       if (whiteList == null) {
         whiteList = '';
       }
       if (clearHolders == null) {
         clearHolders = true;
       }
+      if (enableAutoLink == null) {
+        enableAutoLink = true;
+      }
       text = this.call('beforeParseInline', text);
-      text = text.replace(/(^|[^\\])(`+)(.+?)\2/g, (function(_this) {
+      text = text.replace(/(^|[^\\])(`+)(.+?)\2/mg, (function(_this) {
         return function() {
           var matches;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
@@ -226,7 +229,7 @@
         return function() {
           var matches;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-          if (((_this.commonWhiteList + '|' + whiteList).indexOf(matches[2])) >= 0) {
+          if ((('|' + _this.commonWhiteList + '|' + whiteList + '|').indexOf('|' + matches[2].toLowerCase() + '|')) >= 0) {
             return _this.makeHolder(matches[0]);
           } else {
             return htmlspecialchars(matches[0]);
@@ -241,7 +244,7 @@
           id = _this.footnotes.indexOf(matches[1]);
           if (id < 0) {
             id = _this.footnotes.length + 1;
-            _this.footnotes[id] = _this.parseInline(matches[1], '', false);
+            _this.footnotes.push(_this.parseInline(matches[1], '', false));
           }
           return _this.makeHolder("<sup id=\"fnref-" + id + "\"><a href=\"#fn-" + id + "\" class=\"footnote-ref\">" + id + "</a></sup>");
         };
@@ -268,7 +271,7 @@
         return function() {
           var escaped, matches, url;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-          escaped = _this.parseInline(_this.escapeBracket(matches[1]), '', false);
+          escaped = _this.parseInline(_this.escapeBracket(matches[1]), '', false, false);
           url = _this.escapeBracket(matches[2]);
           return _this.makeHolder("<a href=\"" + url + "\">" + escaped + "</a>");
         };
@@ -277,7 +280,7 @@
         return function() {
           var escaped, matches, result;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-          escaped = _this.parseInline(_this.escapeBracket(matches[1]), '', false);
+          escaped = _this.parseInline(_this.escapeBracket(matches[1]), '', false, false);
           result = _this.definitions[matches[2]] != null ? "<a href=\"" + _this.definitions[matches[2]] + "\">" + escaped + "</a>" : escaped;
           return _this.makeHolder(result);
         };
@@ -291,7 +294,7 @@
       })(this));
       text = this.parseInlineCallback(text);
       text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, '<a href="mailto:$1">$1</a>');
-      text = text.replace(/(^|[^\"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/ig, '$1<a href="$2">$2</a>$4');
+      text = text.replace(/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/ig, '$1<a href="$2">$2</a>$4');
       text = this.call('afterParseInlineBeforeRelease', text);
       text = this.releaseHolder(text, clearHolders);
       text = this.call('afterParseInline', text);
