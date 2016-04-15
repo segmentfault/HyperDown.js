@@ -12,21 +12,19 @@ npm install hyperdown
 
 ##开发者使用方法##
 ###nodejs 中使用##
-[dist/Parser.js](dist/Parser.js) (用 babel 编译成 ES5 的版本)
+[hyperdown.js](hyperdown.js) (用 babel 编译成 ES5 的版本)
 用 babel 编译：
 ```
-$ babel src/Parser.js -o dist/Parser.js
+$ npm run build
 ```
 
-###浏览器中使用###
-[hyperdown.js](hyperdown.js) （ webpack 打包后的版本 ）
-用 webpack 打包：
+###浏览器中使用##
+请根据使用环境自行修改导出方法
 ```
-npm build
-```
-或者：
-```
-npm watch
+// AMD 中需修改最后的导出代码为
+
+// exports.default = Parser;
+define(function() {return Parser;});
 ```
 
 ###单元测试###
@@ -34,6 +32,7 @@ npm watch
 npm test
 ```
 
+其他用法和 php 版完全一样
 
 为何要写这样一个解析器
 ======================
