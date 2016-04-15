@@ -7,23 +7,14 @@
  */
 
 import 'babel-polyfill'
-import md5 from 'md5'
 
 export default class Parser {
     constructor () {
         this.commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a|hr|small'
         this.specialWhiteList = {
             table:  'table|tbody|thead|tfoot|tr|td|th'
-        }
-        this.footnotes = []
-        this.blocks = []
-        this.current = 'normal'
-        this.pos = -1
-        this.definitions = []
+        } 
         this.hooks = {}
-        this.holders = new Map()
-        this.uniqid = md5((new Date()).getTime())
-        this.id = 0
     }
 
     /**
@@ -33,6 +24,15 @@ export default class Parser {
      * @return string
      */
     makeHtml (text) {
+        this.footnotes = []
+        this.blocks = []
+        this.current = 'normal'
+        this.pos = -1
+        this.definitions = []
+        this.holders = new Map()
+        this.uniqid = Math.random() + '' + Date.now()
+        this.id = 0
+
         text = this.initText(text)
         let html = this.parse(text)
         html = this.makeFootnotes(html)
@@ -391,7 +391,7 @@ export default class Parser {
 
             switch (true) {
                 // list
-                case /^(\s*)((?:[0-9a-z]\.)|\-|\+|\*)\s+/.test(line):
+                case /^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/.test(line):
                     let matches = line.match(/^(\s*)((?:[0-9a-z]\.)|\-|\+|\*)\s+/)
 
                     let listSpace = matches[1].length

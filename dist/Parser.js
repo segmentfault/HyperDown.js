@@ -16,12 +16,6 @@ Object.defineProperty(exports, "__esModule", {
 
 require('babel-polyfill');
 
-var _md = require('md5');
-
-var _md2 = _interopRequireDefault(_md);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Parser = (function () {
@@ -32,15 +26,7 @@ var Parser = (function () {
         this.specialWhiteList = {
             table: 'table|tbody|thead|tfoot|tr|td|th'
         };
-        this.footnotes = [];
-        this.blocks = [];
-        this.current = 'normal';
-        this.pos = -1;
-        this.definitions = [];
         this.hooks = {};
-        this.holders = new Map();
-        this.uniqid = (0, _md2.default)(new Date().getTime());
-        this.id = 0;
     }
 
     /**
@@ -53,6 +39,15 @@ var Parser = (function () {
     _createClass(Parser, [{
         key: 'makeHtml',
         value: function makeHtml(text) {
+            this.footnotes = [];
+            this.blocks = [];
+            this.current = 'normal';
+            this.pos = -1;
+            this.definitions = [];
+            this.holders = new Map();
+            this.uniqid = Math.random() + '' + Date.now();
+            this.id = 0;
+
             text = this.initText(text);
             var html = this.parse(text);
             html = this.makeFootnotes(html);
@@ -453,7 +448,7 @@ var Parser = (function () {
 
                 switch (true) {
                     // list
-                    case /^(\s*)((?:[0-9a-z]\.)|\-|\+|\*)\s+/.test(line):
+                    case /^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/.test(line):
                         var matches = line.match(/^(\s*)((?:[0-9a-z]\.)|\-|\+|\*)\s+/);
 
                         var listSpace = matches[1].length;
@@ -1280,4 +1275,3 @@ var Parser = (function () {
 })();
 
 exports.default = Parser;
-module.exports = exports['default'];

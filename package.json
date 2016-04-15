@@ -7,28 +7,16 @@
   },
   "license": "BSD-4-Clause",
   "author": "SegmentFault",
-  "version": "1.0.1",
-  "devDependencies": {
-    "babel": "^5.8.22",
-    "babel-core": "^5.8.22",
-    "babel-loader": "^5.3.2",
-    "babel-plugin-add-module-exports": "^0.1.2",
-    "lodash": "^3.10.1",
-    "mocha": "^2.3.3",
-    "webpack": "^1.11.0"
-  },
+  "version": "2.0.0",
   "scripts": {
     "test": "mocha",
-    "build": "webpack --progress --colors",
-    "watch": "webpack --progress --colors --watch"
+    "build": "cake build"
   },
-  "main": "dist/Parser.js",
+  "main": "index.js",
   "bugs": {
     "url": "https://github.com/SegmentFault/HyperDown.js/issues"
   },
   "homepage": "https://github.com/SegmentFault/HyperDown.js#readme",
   "dependencies": {
-    "babel-polyfill": "^6.3.14",
-    "md5": "^2.0.0"
   }
 }

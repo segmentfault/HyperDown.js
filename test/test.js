@@ -1,5 +1,5 @@
 var assert = require("assert");
-var Parser = require("../dist/Parser.js");
+var Parser = require("../Parser.js");
 var parser = new Parser();
 
 describe('HyperDown.js', function() {
