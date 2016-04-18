@@ -784,5 +784,8 @@ class Parser
         @
 
 
-module.exports = Parser if module?
+if module?
+    module.exports = Parser
+else if window?
+    window.HyperDown = Parser
 
