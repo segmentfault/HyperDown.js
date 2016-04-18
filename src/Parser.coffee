@@ -229,7 +229,7 @@ class Parser
             @makeHolder result
 
         # escape
-        text = text.replace /\\(`|\*|_|~)/g, (matches...) =>
+        text = text.replace /\\(x80-xff|.)/g, (matches...) =>
             @makeHolder htmlspecialchars matches[1]
 
         # strong and em and some fuck

@@ -137,4 +137,10 @@ describe('HyperDown.js', function() {
         });
     });
 
+    describe('bugfix', function() {
+        it('escape', function () {
+            assert.equal('<p>[系统盘]:\\Documents and Settings\\[用户名]\\Cookies</p>', parser.makeHtml('\\[系统盘]:\\\\Documents and Settings\\\\[用户名]\\\\Cookies'));
+        });
+    });
+
 });
