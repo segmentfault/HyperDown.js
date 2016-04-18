@@ -369,6 +369,9 @@
       for (key = l = 0, len1 = lines.length; l < len1; key = ++l) {
         line = lines[key];
         block = this.getBlock();
+        if (block != null) {
+          block = block.slice(0);
+        }
         if (!!(matches = line.match(/^(\s*)(~|`){3,}([^`~]*)$/i))) {
           if (this.isBlock('code')) {
             isAfterList = block[3][2];
@@ -441,11 +444,11 @@
             break;
           case !!(matches = line.match(/^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+)|(?:(?:[ :]*\-[ :]*)+(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/)):
             if (this.isBlock('normal')) {
-              head = false;
+              head = 0;
               if ((block == null) || block[0] !== 'normal' || lines[block[2]].match(/^\s*$/)) {
                 this.startBlock('table', key);
               } else {
-                head = true;
+                head = 1;
                 this.backBlock(1, 'table');
               }
               if (matches[1][0] === '|') {
@@ -470,7 +473,11 @@
                 }
                 aligns.push(align);
               }
-              this.setBlock(key, [head, aligns]);
+              this.setBlock(key, [[head], aligns, head + 1]);
+            } else {
+              block[3][0].push(block[3][2]);
+              block[3][2] += 1;
+              this.setBlock(key, block[3]);
             }
             break;
           case !!(matches = line.match(/^(#+)(.*)$/)):
@@ -510,7 +517,8 @@
               }
             } else if (this.isBlock('table')) {
               if (0 <= line.indexOf('|')) {
-                this.setBlock(key);
+                block[3][2] += 1;
+                this.setBlock(key, block[3]);
               } else {
                 this.startBlock('normal', key);
               }
@@ -698,19 +706,23 @@
     };
 
     Parser.prototype.parseTable = function(lines, value) {
-      var aligns, body, column, columns, head, html, ignore, j, key, l, last, len, len1, line, num, row, rows, tag, text;
-      head = value[0], aligns = value[1];
-      ignore = head ? 1 : 0;
+      var aligns, body, column, columns, head, html, ignores, j, key, l, last, len, len1, line, num, output, row, rows, tag, text;
+      ignores = value[0], aligns = value[1];
+      head = ignores.length > 0;
       html = '<table>';
       body = null;
+      output = false;
       for (key = j = 0, len = lines.length; j < len; key = ++j) {
         line = lines[key];
-        if (key === ignore) {
-          head = false;
-          body = true;
+        if (0 <= ignores.indexOf(key)) {
+          if (head && output) {
+            head = false;
+            body = true;
+          }
           continue;
         }
         line = trim(line);
+        output = true;
         if (line[0] === '|') {
           line = line.substring(1);
           if (line[line.length - 1] === '|') {

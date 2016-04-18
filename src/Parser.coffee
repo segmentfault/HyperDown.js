@@ -283,6 +283,7 @@ class Parser
 
         for line, key in lines
             block = @getBlock()
+            block = block.slice 0 if block?
 
             if !!(matches = line.match /^(\s*)(~|`){3,}([^`~]*)$/i)
                 if @isBlock 'code'
@@ -368,12 +369,12 @@ class Parser
                 # table
                 when !!(matches = line.match /^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+)|(?:(?:[ :]*\-[ :]*)+(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/)
                     if @isBlock 'normal'
-                        head = no
+                        head = 0
 
                         if not block? or block[0] != 'normal' or lines[block[2]].match /^\s*$/
                             @startBlock 'table', key
                         else
-                            head = yes
+                            head = 1
                             @backBlock 1, 'table'
 
                         if matches[1][0] == '|'
@@ -398,7 +399,11 @@ class Parser
 
                             aligns.push align
 
-                        @setBlock key, [head, aligns]
+                        @setBlock key, [[head], aligns, head + 1]
+                    else
+                        block[3][0].push block[3][2]
+                        block[3][2] += 1
+                        @setBlock key, block[3]
                 
                 # single heading
                 when !!(matches = line.match /^(#+)(.*)$/)
@@ -442,7 +447,8 @@ class Parser
                             startBlock 'normal', key
                     else if @isBlock 'table'
                         if 0 <= line.indexOf '|'
-                            @setBlock key
+                            block[3][2] += 1
+                            @setBlock key, block[3]
                         else
                             @startBlock 'normal', key
                     else if @isBlock 'pre'
@@ -605,19 +611,22 @@ class Parser
 
 
     parseTable: (lines, value) ->
-        [head, aligns] = value
-        ignore = if head then 1 else 0
+        [ignores, aligns] = value
+        head = ignores.length > 0
 
         html = '<table>'
         body = null
+        output = no
 
         for line, key in lines
-            if key == ignore
-                head = no
-                body = yes
+            if 0 <= ignores.indexOf key
+                if head and output
+                    head = no
+                    body = yes
                 continue
 
             line = trim line
+            output = yes
 
             if line[0] == '|'
                 line = line.substring 1

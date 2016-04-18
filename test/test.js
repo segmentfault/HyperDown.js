@@ -141,6 +141,10 @@ describe('HyperDown.js', function() {
         it('escape', function () {
             assert.equal('<p>[系统盘]:\\Documents and Settings\\[用户名]\\Cookies</p>', parser.makeHtml('\\[系统盘]:\\\\Documents and Settings\\\\[用户名]\\\\Cookies'));
         });
+
+        it('table', function () {
+            assert.equal('<table><thead><tr><th>Variable_name</th><th>Value</th></tr></thead><tbody><tr><td>sql_mode</td><td>ONLY_FULL_GROUP_BY, STRICT_TRANS_TABLES, NO_ZERO_IN_DATE, NO_ZERO_DATE, ERROR_FOR_DIVISION_BY_ZERO, NO_AUTO_CREATE_USER, NO_ENGINE_SUBSTITUTION</td></tr></tbody></table>', parser.makeHtml('|---------------|-------|\n| Variable_name | Value |\n| ------------- | ----- |\n| sql_mode      | ONLY_FULL_GROUP_BY, STRICT_TRANS_TABLES, NO_ZERO_IN_DATE, NO_ZERO_DATE, ERROR_FOR_DIVISION_BY_ZERO, NO_AUTO_CREATE_USER, NO_ENGINE_SUBSTITUTION |\n|---------------|-------|'));
+        });
     });
 
 });
