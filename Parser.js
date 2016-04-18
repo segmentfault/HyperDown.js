@@ -590,12 +590,19 @@
     };
 
     Parser.prototype.parseCode = function(lines, parts) {
-      var blank, count, lang, str;
+      var blank, count, lang, rel, str;
       blank = parts[0], lang = parts[1];
       lang = trim(lang);
       count = blank.length;
-      if (!lang.match(/^[_a-z0-9-\+\#]+$/i)) {
+      if (!lang.match(/^[_a-z0-9-\+\#\:\.]+$/i)) {
         lang = null;
+      } else {
+        parts = lang.split(':');
+        if (parts.length > 1) {
+          lang = parts[0], rel = parts[1];
+          lang = trim(lang);
+          rel = trim(rel);
+        }
       }
       lines = lines.slice(1, -1).map(function(line) {
         return line.replace(new RegExp("/^[ ]{" + count + "}/"), '');
@@ -604,7 +611,7 @@
       if (str.match(/^\s*$/)) {
         return '';
       } else {
-        return '<pre><code' + (lang != null ? " class=\"" + lang + "\"" : '') + '>' + (htmlspecialchars(str)) + '</code></pre>';
+        return '<pre><code' + (!!lang ? " class=\"" + lang + "\"" : '') + (!!rel ? " rel=\"" + rel + "\"" : '') + '>' + (htmlspecialchars(str)) + '</code></pre>';
       }
     };
 
@@ -919,6 +926,8 @@
 
   if (typeof module !== "undefined" && module !== null) {
     module.exports = Parser;
+  } else if (typeof window !== "undefined" && window !== null) {
+    window.HyperDown = Parser;
   }
 
 }).call(this);

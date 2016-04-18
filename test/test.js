@@ -68,6 +68,9 @@ describe('HyperDown.js', function() {
         it('type2', function() {
             assert.equal('<p><code>Objective-C</code>使用了消息机制代替调<code>javascript</code>用方法。</p>', parser.makeHtml('`Objective-C`使用了消息机制代替调`javascript`用方法。'));
         });
+        it('type3', function() {
+            assert.equal('<pre><code class="javascript" rel="example.js">var s=&quot;123&quot;;</code></pre>', parser.makeHtml('```javascript:example.js\nvar s="123";\n```'));
+        });
     });
 
     describe('quote', function() {

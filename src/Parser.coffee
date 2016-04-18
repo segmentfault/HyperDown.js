@@ -519,7 +519,15 @@ class Parser
         lang = trim lang
         count = blank.length
 
-        lang = null if not lang.match /^[_a-z0-9-\+\#]+$/i
+        if not lang.match /^[_a-z0-9-\+\#\:\.]+$/i
+            lang = null
+        else
+            parts = lang.split ':'
+            if parts.length > 1
+                [lang, rel] = parts
+                lang = trim lang
+                rel = trim rel
+        
 
         lines = lines.slice 1, -1
             .map (line) ->
@@ -528,7 +536,8 @@ class Parser
         str = lines.join "\n"
 
         if str.match /^\s*$/ then '' else '<pre><code' \
-            + (if lang? then " class=\"#{lang}\"" else '') + '>' \
+            + (if !!lang then " class=\"#{lang}\"" else '') \
+            + (if !!rel then " rel=\"#{rel}\"" else '') + '>' \
             + (htmlspecialchars str) + '</code></pre>'
 
     
