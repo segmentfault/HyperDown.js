@@ -7,12 +7,12 @@
   },
   "license": "BSD-4-Clause",
   "author": "SegmentFault",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "scripts": {
     "test": "mocha",
     "build": "cake build"
   },
-  "main": "index.js",
+  "main": "Parser.js",
   "bugs": {
     "url": "https://github.com/SegmentFault/HyperDown.js/issues"
   },
