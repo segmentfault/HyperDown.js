@@ -229,7 +229,9 @@ class Parser
 
         # escape
         text = text.replace /\\(x80-xff|.)/g, (matches...) =>
-            @makeHolder htmlspecialchars matches[1]
+            escaped = htmlspecialchars matches[1]
+            escaped = escaped.replace /\$/g, '&dollar;'
+            @makeHolder escaped
 
         # strong and em and some fuck
         text = @parseInlineCallback text

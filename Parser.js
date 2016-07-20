@@ -287,9 +287,11 @@
       })(this));
       text = text.replace(/\\(x80-xff|.)/g, (function(_this) {
         return function() {
-          var matches;
+          var escaped, matches;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-          return _this.makeHolder(htmlspecialchars(matches[1]));
+          escaped = htmlspecialchars(matches[1]);
+          escaped = escaped.replace(/\$/g, '&dollar;');
+          return _this.makeHolder(escaped);
         };
       })(this));
       text = this.parseInlineCallback(text);
