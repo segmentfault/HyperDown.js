@@ -294,7 +294,9 @@
       })(this));
       text = this.parseInlineCallback(text);
       text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, '<a href="mailto:$1">$1</a>');
-      text = text.replace(/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/ig, '$1<a href="$2">$2</a>$4');
+      if (enableAutoLink) {
+        text = text.replace(/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/ig, '$1<a href="$2">$2</a>$4');
+      }
       text = this.call('afterParseInlineBeforeRelease', text);
       text = this.releaseHolder(text, clearHolders);
       text = this.call('afterParseInline', text);
@@ -513,7 +515,7 @@
               if (matches[1].length >= block[3][0]) {
                 this.setBlock(key);
               } else {
-                startBlock('normal', key);
+                this.startBlock('normal', key);
               }
             } else if (this.isBlock('table')) {
               if (0 <= line.indexOf('|')) {
