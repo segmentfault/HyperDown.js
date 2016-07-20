@@ -36,7 +36,7 @@
     };
 
     htmlspecialchars = function(str) {
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&#039;').replace(/"/g, '&quot;');
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     };
 
     trim = function(str, ch) {
@@ -237,7 +237,7 @@
         };
       })(this));
       text = str_replace(['<', '>'], ['&lt;', '&gt;'], text);
-      text = text.replace(/\[\^((?:[^\]]|\]|\[)+?)\]/g, (function(_this) {
+      text = text.replace(/\[\^((?:[^\]]|\\\]|\\\[)+?)\]/g, (function(_this) {
         return function() {
           var id, matches;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
@@ -249,7 +249,7 @@
           return _this.makeHolder("<sup id=\"fnref-" + id + "\"><a href=\"#fn-" + id + "\" class=\"footnote-ref\">" + id + "</a></sup>");
         };
       })(this));
-      text = text.replace(/!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/g, (function(_this) {
+      text = text.replace(/!\[((?:[^\]]|\\\]|\\\[)*?)\]\(((?:[^\)]|\\\)|\\\()+?)\)/g, (function(_this) {
         return function() {
           var escaped, matches, url;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
@@ -258,7 +258,7 @@
           return _this.makeHolder("<img src=\"" + url + "\" alt=\"" + escaped + "\" title=\"" + escaped + "\">");
         };
       })(this));
-      text = text.replace(/!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]/g, (function(_this) {
+      text = text.replace(/!\[((?:[^\]]|\\\]|\\\[)*?)\]\[((?:[^\]]|\\\]|\\\[)+?)\]/g, (function(_this) {
         return function() {
           var escaped, matches, result;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
@@ -267,7 +267,7 @@
           return _this.makeHolder(result);
         };
       })(this));
-      text = text.replace(/\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/g, (function(_this) {
+      text = text.replace(/\[((?:[^\]]|\\\]|\\\[)+?)\]\(((?:[^\)]|\\\)|\\\()+?)\)/g, (function(_this) {
         return function() {
           var escaped, matches, url;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
@@ -276,7 +276,7 @@
           return _this.makeHolder("<a href=\"" + url + "\">" + escaped + "</a>");
         };
       })(this));
-      text = text.replace(/\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/g, (function(_this) {
+      text = text.replace(/\[((?:[^\]]|\\\]|\\\[)+?)\]\[((?:[^\]]|\\\]|\\\[)+?)\]/g, (function(_this) {
         return function() {
           var escaped, matches, result;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
@@ -304,49 +304,49 @@
     };
 
     Parser.prototype.parseInlineCallback = function(text) {
-      text = text.replace(/(\*{3})(.+?)\1/g, (function(_this) {
+      text = text.replace(/(\*{3})((?:.|\r)+?)\1/mg, (function(_this) {
         return function() {
           var matches;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
           return '<strong><em>' + (_this.parseInlineCallback(matches[2])) + '</em></strong>';
         };
       })(this));
-      text = text.replace(/(\*{2})(.+?)\1/g, (function(_this) {
+      text = text.replace(/(\*{2})((?:.|\r)+?)\1/mg, (function(_this) {
         return function() {
           var matches;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
           return '<strong>' + (_this.parseInlineCallback(matches[2])) + '</strong>';
         };
       })(this));
-      text = text.replace(/(\*)(.+?)\1/g, (function(_this) {
+      text = text.replace(/(\*)((?:.|\r)+?)\1/mg, (function(_this) {
         return function() {
           var matches;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
           return '<em>' + (_this.parseInlineCallback(matches[2])) + '</em>';
         };
       })(this));
-      text = text.replace(/(\s+|^)(_{3})(.+?)\2(\s+|$)/g, (function(_this) {
+      text = text.replace(/(\s+|^)(_{3})((?:.|\r)+?)\2(\s+|$)/mg, (function(_this) {
         return function() {
           var matches;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
           return matches[1] + '<strong><em>' + (_this.parseInlineCallback(matches[3])) + '</em></strong>' + matches[4];
         };
       })(this));
-      text = text.replace(/(\s+|^)(_{2})(.+?)\2(\s+|$)/g, (function(_this) {
+      text = text.replace(/(\s+|^)(_{2})((?:.|\r)+?)\2(\s+|$)/mg, (function(_this) {
         return function() {
           var matches;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
           return matches[1] + '<strong>' + (_this.parseInlineCallback(matches[3])) + '</strong>' + matches[4];
         };
       })(this));
-      text = text.replace(/(\s+|^)(_)(.+?)\2(\s+|$)/g, (function(_this) {
+      text = text.replace(/(\s+|^)(_)((?:.|\r)+?)\2(\s+|$)/mg, (function(_this) {
         return function() {
           var matches;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
           return matches[1] + '<em>' + (_this.parseInlineCallback(matches[3])) + '</em>' + matches[4];
         };
       })(this));
-      text = text.replace(/(~{2})(.+?)\1/, (function(_this) {
+      text = text.replace(/(~{2})((?:.|\r)+?)\1/mg, (function(_this) {
         return function() {
           var matches;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
@@ -412,6 +412,14 @@
           continue;
         }
         switch (true) {
+          case !!(line.match(/^ {4}/)):
+            emptyCount = 0;
+            if ((this.isBlock('pre')) || this.isBlock('list')) {
+              this.setBlock(key);
+            } else {
+              this.startBlock('pre', key);
+            }
+            break;
           case !!(matches = line.match(/^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/)):
             space = matches[1].length;
             emptyCount = 0;
@@ -419,14 +427,6 @@
               this.setBlock(key, space);
             } else {
               this.startBlock('list', key, space);
-            }
-            break;
-          case !!(line.match(/^ {4}/)):
-            emptyCount = 0;
-            if ((this.isBlock('pre')) || this.isBlock('list')) {
-              this.setBlock(key);
-            } else {
-              this.startBlock('pre', key);
             }
             break;
           case !!(matches = line.match(/^\[\^((?:[^\]]|\]|\[)+?)\]:/)):
@@ -445,7 +445,11 @@
             }
             break;
           case !!(matches = line.match(/^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+)|(?:(?:[ :]*\-[ :]*)+(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/)):
-            if (this.isBlock('normal')) {
+            if (this.isBlock('table')) {
+              block[3][0].push(block[3][2]);
+              block[3][2] += 1;
+              this.setBlock(key, block[3]);
+            } else {
               head = 0;
               if ((block == null) || block[0] !== 'normal' || lines[block[2]].match(/^\s*$/)) {
                 this.startBlock('table', key);
@@ -476,10 +480,6 @@
                 aligns.push(align);
               }
               this.setBlock(key, [[head], aligns, head + 1]);
-            } else {
-              block[3][0].push(block[3][2]);
-              block[3][2] += 1;
-              this.setBlock(key, block[3]);
             }
             break;
           case !!(matches = line.match(/^(#+)(.*)$/)):

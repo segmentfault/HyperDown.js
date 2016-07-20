@@ -28,7 +28,6 @@ class Parser
         str.replace /&/g, '&amp;'
             .replace /</g, '&lt;'
             .replace />/g, '&gt;'
-            .replace /'/g, '&#039;'
             .replace /"/g, '&quot;'
 
 
@@ -193,7 +192,7 @@ class Parser
         text = str_replace ['<', '>'], ['&lt;', '&gt;'], text
 
         # footnote
-        text = text.replace /\[\^((?:[^\]]|\]|\[)+?)\]/g, (matches...) =>
+        text = text.replace /\[\^((?:[^\]]|\\\]|\\\[)+?)\]/g, (matches...) =>
             id = @footnotes.indexOf matches[1]
 
             if id < 0
@@ -203,12 +202,12 @@ class Parser
             @makeHolder "<sup id=\"fnref-#{id}\"><a href=\"#fn-#{id}\" class=\"footnote-ref\">#{id}</a></sup>"
 
         # image
-        text = text.replace /!\[((?:[^\]]|\]|\[)*?)\]\(((?:[^\)]|\)|\()+?)\)/g, (matches...) =>
+        text = text.replace /!\[((?:[^\]]|\\\]|\\\[)*?)\]\(((?:[^\)]|\\\)|\\\()+?)\)/g, (matches...) =>
             escaped = @escapeBracket matches[1]
             url = @escapeBracket matches[2]
             @makeHolder "<img src=\"#{url}\" alt=\"#{escaped}\" title=\"#{escaped}\">"
 
-        text = text.replace /!\[((?:[^\]]|\]|\[)*?)\]\[((?:[^\]]|\]|\[)+?)\]/g, (matches...) =>
+        text = text.replace /!\[((?:[^\]]|\\\]|\\\[)*?)\]\[((?:[^\]]|\\\]|\\\[)+?)\]/g, (matches...) =>
             escaped = @escapeBracket matches[1]
 
             result = if @definitions[matches[2]]? then "<img src=\"#{@definitions[matches[2]]}\" alt=\"#{escaped}\" title=\"#{escaped}\">" else escaped
@@ -216,12 +215,12 @@ class Parser
             @makeHolder result
 
         # link
-        text = text.replace /\[((?:[^\]]|\]|\[)+?)\]\(((?:[^\)]|\)|\()+?)\)/g, (matches...) =>
+        text = text.replace /\[((?:[^\]]|\\\]|\\\[)+?)\]\(((?:[^\)]|\\\)|\\\()+?)\)/g, (matches...) =>
             escaped = @parseInline (@escapeBracket matches[1]), '', no, no
             url = @escapeBracket matches[2]
             @makeHolder "<a href=\"#{url}\">#{escaped}</a>"
 
-        text = text.replace /\[((?:[^\]]|\]|\[)+?)\]\[((?:[^\]]|\]|\[)+?)\]/g, (matches...) =>
+        text = text.replace /\[((?:[^\]]|\\\]|\\\[)+?)\]\[((?:[^\]]|\\\]|\\\[)+?)\]/g, (matches...) =>
             escaped = @parseInline (@escapeBracket matches[1]), '', no, no
 
             result = if @definitions[matches[2]]? then "<a href=\"#{@definitions[matches[2]]}\">#{escaped}</a>" else escaped
@@ -249,25 +248,25 @@ class Parser
 
 
     parseInlineCallback: (text) ->
-        text = text.replace /(\*{3})(.+?)\1/g, (matches...) =>
+        text = text.replace /(\*{3})((?:.|\r)+?)\1/mg, (matches...) =>
             '<strong><em>' + (@parseInlineCallback matches[2]) + '</em></strong>'
 
-        text = text.replace /(\*{2})(.+?)\1/g, (matches...) =>
+        text = text.replace /(\*{2})((?:.|\r)+?)\1/mg, (matches...) =>
             '<strong>' + (@parseInlineCallback matches[2]) + '</strong>'
 
-        text = text.replace /(\*)(.+?)\1/g, (matches...) =>
+        text = text.replace /(\*)((?:.|\r)+?)\1/mg, (matches...) =>
             '<em>' + (@parseInlineCallback matches[2]) + '</em>'
 
-        text = text.replace /(\s+|^)(_{3})(.+?)\2(\s+|$)/g, (matches...) =>
+        text = text.replace /(\s+|^)(_{3})((?:.|\r)+?)\2(\s+|$)/mg, (matches...) =>
             matches[1] + '<strong><em>' + (@parseInlineCallback matches[3]) + '</em></strong>' + matches[4]
 
-        text = text.replace /(\s+|^)(_{2})(.+?)\2(\s+|$)/g, (matches...) =>
+        text = text.replace /(\s+|^)(_{2})((?:.|\r)+?)\2(\s+|$)/mg, (matches...) =>
             matches[1] + '<strong>' + (@parseInlineCallback matches[3]) + '</strong>' + matches[4]
 
-        text = text.replace /(\s+|^)(_)(.+?)\2(\s+|$)/g, (matches...) =>
+        text = text.replace /(\s+|^)(_)((?:.|\r)+?)\2(\s+|$)/mg, (matches...) =>
             matches[1] + '<em>' + (@parseInlineCallback matches[3]) + '</em>' + matches[4]
 
-        text = text.replace /(~{2})(.+?)\1/, (matches...) =>
+        text = text.replace /(~{2})((?:.|\r)+?)\1/mg, (matches...) =>
             '<del>' + (@parseInlineCallback matches[2]) + '</del>'
 
         text
@@ -329,6 +328,15 @@ class Parser
                 continue
 
             switch true
+                # pre block
+                when !!(line.match /^ {4}/)
+                    emptyCount = 0
+
+                    if (@isBlock 'pre') or @isBlock 'list'
+                        @setBlock key
+                    else
+                        @startBlock 'pre', key
+
                 # list
                 when !!(matches = line.match /^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/)
                     space = matches[1].length
@@ -339,15 +347,6 @@ class Parser
                         @setBlock key, space
                     else
                         @startBlock 'list', key, space
-
-                # pre block
-                when !!(line.match /^ {4}/)
-                    emptyCount = 0
-
-                    if (@isBlock 'pre') or @isBlock 'list'
-                        @setBlock key
-                    else
-                        @startBlock 'pre', key
 
                 # foot note
                 when !!(matches = line.match /^\[\^((?:[^\]]|\]|\[)+?)\]:/)
@@ -369,7 +368,11 @@ class Parser
 
                 # table
                 when !!(matches = line.match /^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+)|(?:(?:[ :]*\-[ :]*)+(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/)
-                    if @isBlock 'normal'
+                    if @isBlock 'table'
+                        block[3][0].push block[3][2]
+                        block[3][2] += 1
+                        @setBlock key, block[3]
+                    else
                         head = 0
 
                         if not block? or block[0] != 'normal' or lines[block[2]].match /^\s*$/
@@ -401,10 +404,7 @@ class Parser
                             aligns.push align
 
                         @setBlock key, [[head], aligns, head + 1]
-                    else
-                        block[3][0].push block[3][2]
-                        block[3][2] += 1
-                        @setBlock key, block[3]
+                        
                 
                 # single heading
                 when !!(matches = line.match /^(#+)(.*)$/)
