@@ -722,9 +722,11 @@
     Parser.prototype.parseTable = function(lines, value) {
       var aligns, body, column, columns, head, html, ignores, j, key, l, last, len, len1, line, num, output, row, rows, tag, text;
       ignores = value[0], aligns = value[1];
-      head = ignores.length > 0;
+      head = ignores.length > 0 && (ignores.reduce(function(prev, curr) {
+        return curr + prev;
+      })) > 0;
       html = '<table>';
-      body = null;
+      body = head ? null : true;
       output = false;
       for (key = j = 0, len = lines.length; j < len; key = ++j) {
         line = lines[key];

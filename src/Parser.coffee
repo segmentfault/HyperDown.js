@@ -627,10 +627,10 @@ class Parser
 
     parseTable: (lines, value) ->
         [ignores, aligns] = value
-        head = ignores.length > 0
+        head = ignores.length > 0 and (ignores.reduce (prev, curr) -> curr + prev) > 0
 
         html = '<table>'
-        body = null
+        body = if head then null else yes
         output = no
 
         for line, key in lines
