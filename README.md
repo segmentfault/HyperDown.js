@@ -1,9 +1,7 @@
 HyperDown.js
 ======================
 
-这是 js 版本 HyperDown
-
-翻译为 ES6 的 [src/Parser.js](src/Parser.coffee)
+这是 js 版本 HyperDown (使用CoffeeScript实现)
 
 ##使用方法##
 ```
@@ -11,28 +9,41 @@ npm install hyperdown
 ```
 
 ##开发者使用方法##
+
 ###nodejs 中使用##
-[hyperdown.js](hyperdown.js) (用 babel 编译成 ES5 的版本)
-用 babel 编译：
+
+安装
+
 ```
-$ npm run build
+npm install hyperdown
 ```
+
+使用
+
+```
+HyperDown = require('hyperdown');
+
+var parser = new HyperDown,
+    html = parser.makeHtml(markdownText);
+```
+
 
 ###浏览器中使用##
-请根据使用环境自行修改导出方法
-```
-// AMD 中需修改最后的导出代码为
 
-// exports.default = Parser;
-define(function() {return Parser;});
+直接引用`Parser.js`即可
+
+```
+<script src="yourpath/hyperdown/Parser.js"></script>
+<script>
+var parser = new HyperDown,
+    html = parser.makeHtml(markdownText);
+</script>
 ```
 
 ###单元测试###
 ```
 npm test
 ```
-
-其他用法和 php 版完全一样
 
 为何要写这样一个解析器
 ======================
@@ -45,15 +56,6 @@ Markdown已经面世许多年了，国内外许多大大小小的网站都在用
 
 他们都有或多或少的毛病，有的性能较差，有的代码比较业余，更多的情况是由于Markdown本身解析比较复杂，因此我们几乎无法去维护另外一个人写的代码。基于这个原因，我为 SegmentFault 专门编写了这么一个Markdown解析器。
 
-使用方法
---------
-
-与常规的解析类库没有任何区别
-
-```php
-$parser = new HyperDown\Parser;
-$html = $parser->makeHtml($text);
-```
 
 当前支持的语法
 --------------
@@ -70,10 +72,6 @@ $html = $parser->makeHtml($text);
 - 脚标
 - 分隔符
 - 表格
-
-即将支持的语法
---------------
-
 - 图片和链接支持互相套用
 
 
