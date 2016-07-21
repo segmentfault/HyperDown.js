@@ -3,7 +3,7 @@ HyperDown.js
 
 这是 js 版本 HyperDown
 
-翻译为 ES6 的 [src/Parser.js](src/Parser.js)
+翻译为 ES6 的 [src/Parser.js](src/Parser.coffee)
 
 ##使用方法##
 ```
