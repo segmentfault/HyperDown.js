@@ -180,6 +180,7 @@ class Parser
         
         # link
         text = text.replace /<(https?:\/\/.+)>/ig, (matches...) =>
+            matches[1] = @cleanUrl matches[1]
             @makeHolder "<a href=\"#{matches[1]}\">#{matches[1]}</a>"
 
         # encode unsafe tags
@@ -205,6 +206,7 @@ class Parser
         text = text.replace /!\[((?:[^\]]|\\\]|\\\[)*?)\]\(((?:[^\)]|\\\)|\\\()+?)\)/g, (matches...) =>
             escaped = @escapeBracket matches[1]
             url = @escapeBracket matches[2]
+            url = @cleanUrl url
             @makeHolder "<img src=\"#{url}\" alt=\"#{escaped}\" title=\"#{escaped}\">"
 
         text = text.replace /!\[((?:[^\]]|\\\]|\\\[)*?)\]\[((?:[^\]]|\\\]|\\\[)+?)\]/g, (matches...) =>
@@ -218,6 +220,7 @@ class Parser
         text = text.replace /\[((?:[^\]]|\\\]|\\\[)+?)\]\(((?:[^\)]|\\\)|\\\()+?)\)/g, (matches...) =>
             escaped = @parseInline (@escapeBracket matches[1]), '', no, no
             url = @escapeBracket matches[2]
+            url = @cleanUrl url
             @makeHolder "<a href=\"#{url}\">#{escaped}</a>"
 
         text = text.replace /\[((?:[^\]]|\\\]|\\\[)+?)\]\[((?:[^\]]|\\\]|\\\[)+?)\]/g, (matches...) =>
@@ -239,7 +242,7 @@ class Parser
 
         # autolink url
         if  enableAutoLink
-            text = text.replace /(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/ig, '$1<a href="$2">$2</a>$4'
+            text = text.replace /(^|[^"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^"])/ig, '$1<a href="$2">$2</a>$4'
 
         text = @call 'afterParseInlineBeforeRelease', text
         text = @releaseHolder text, clearHolders
@@ -357,7 +360,7 @@ class Parser
 
                 # definition
                 when !!(matches = line.match /^\s*\[((?:[^\]]|\]|\[)+?)\]:\s*(.+)$/)
-                    @definitions[matches[1]] = matches[2]
+                    @definitions[matches[1]] = @cleanUrl matches[2]
                     @startBlock 'definition', key
                         .endBlock()
 
@@ -729,6 +732,13 @@ class Parser
             @parseInline line, if @specialWhiteList[type]? then @specialWhiteList[type] else ''
 
         lines.join "\n"
+
+
+    cleanUrl: (url) ->
+        if !!(matches = url.match /^\s*((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)/i)
+            matches[1]
+        else
+            '#'
 
 
     escapeBracket: (str) ->

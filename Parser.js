@@ -222,6 +222,7 @@
         return function() {
           var matches;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+          matches[1] = _this.cleanUrl(matches[1]);
           return _this.makeHolder("<a href=\"" + matches[1] + "\">" + matches[1] + "</a>");
         };
       })(this));
@@ -255,6 +256,7 @@
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
           escaped = _this.escapeBracket(matches[1]);
           url = _this.escapeBracket(matches[2]);
+          url = _this.cleanUrl(url);
           return _this.makeHolder("<img src=\"" + url + "\" alt=\"" + escaped + "\" title=\"" + escaped + "\">");
         };
       })(this));
@@ -273,6 +275,7 @@
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
           escaped = _this.parseInline(_this.escapeBracket(matches[1]), '', false, false);
           url = _this.escapeBracket(matches[2]);
+          url = _this.cleanUrl(url);
           return _this.makeHolder("<a href=\"" + url + "\">" + escaped + "</a>");
         };
       })(this));
@@ -297,7 +300,7 @@
       text = this.parseInlineCallback(text);
       text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, '<a href="mailto:$1">$1</a>');
       if (enableAutoLink) {
-        text = text.replace(/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/ig, '$1<a href="$2">$2</a>$4');
+        text = text.replace(/(^|[^"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^"])/ig, '$1<a href="$2">$2</a>$4');
       }
       text = this.call('afterParseInlineBeforeRelease', text);
       text = this.releaseHolder(text, clearHolders);
@@ -436,7 +439,7 @@
             this.startBlock('footnote', key, [space, matches[1]]);
             break;
           case !!(matches = line.match(/^\s*\[((?:[^\]]|\]|\[)+?)\]:\s*(.+)$/)):
-            this.definitions[matches[1]] = matches[2];
+            this.definitions[matches[1]] = this.cleanUrl(matches[2]);
             this.startBlock('definition', key).endBlock();
             break;
           case !!(line.match(/^\s*>/)):
@@ -836,6 +839,15 @@
         };
       })(this));
       return lines.join("\n");
+    };
+
+    Parser.prototype.cleanUrl = function(url) {
+      var matches;
+      if (!!(matches = url.match(/^\s*((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)/i))) {
+        return matches[1];
+      } else {
+        return '#';
+      }
     };
 
     Parser.prototype.escapeBracket = function(str) {
