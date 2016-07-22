@@ -220,10 +220,11 @@
       })(this));
       text = text.replace(/<(https?:\/\/.+)>/ig, (function(_this) {
         return function() {
-          var matches;
+          var link, matches, url;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-          matches[1] = _this.cleanUrl(matches[1]);
-          return _this.makeHolder("<a href=\"" + matches[1] + "\">" + matches[1] + "</a>");
+          url = _this.cleanUrl(matches[1]);
+          link = _this.call('parseLink', $matches[1]);
+          return _this.makeHolder("<a href=\"" + url + "\">" + link + "</a>");
         };
       })(this));
       text = text.replace(/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/ig, (function(_this) {
@@ -300,7 +301,14 @@
       text = this.parseInlineCallback(text);
       text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, '<a href="mailto:$1">$1</a>');
       if (enableAutoLink) {
-        text = text.replace(/(^|[^"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^"])/ig, '$1<a href="$2">$2</a>$4');
+        text = text.replace(/(^|[^"])((https?):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^"])/ig, (function(_this) {
+          return function() {
+            var link, matches;
+            matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+            link = _this.call('parseLink', matches[2]);
+            return matches[1] + "<a href=\"" + matches[2] + "\">" + link + "</a>" + matches[4];
+          };
+        })(this));
       }
       text = this.call('afterParseInlineBeforeRelease', text);
       text = this.releaseHolder(text, clearHolders);

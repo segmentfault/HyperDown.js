@@ -180,8 +180,10 @@ class Parser
         
         # link
         text = text.replace /<(https?:\/\/.+)>/ig, (matches...) =>
-            matches[1] = @cleanUrl matches[1]
-            @makeHolder "<a href=\"#{matches[1]}\">#{matches[1]}</a>"
+            url = @cleanUrl matches[1]
+            link = @call 'parseLink', $matches[1]
+
+            @makeHolder "<a href=\"#{url}\">#{link}</a>"
 
         # encode unsafe tags
         text = text.replace /<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/ig, (matches...) =>
@@ -242,7 +244,9 @@ class Parser
 
         # autolink url
         if  enableAutoLink
-            text = text.replace /(^|[^"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^"])/ig, '$1<a href="$2">$2</a>$4'
+            text = text.replace /(^|[^"])((https?):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^"])/ig, (matches...) =>
+                link = @call 'parseLink', matches[2]
+                "#{matches[1]}<a href=\"#{matches[2]}\">#{link}</a>#{matches[4]}"
 
         text = @call 'afterParseInlineBeforeRelease', text
         text = @releaseHolder text, clearHolders
