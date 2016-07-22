@@ -498,7 +498,11 @@ class Parser
 
         blocks = @call 'beforeOptimizeBlocks', blocks, lines
 
-        for block, key in blocks
+        key = 0
+        while blocks[key]?
+            moved = no
+
+            block = blocks[key]
             prevBlock = if blocks[key - 1]? then blocks[key - 1] else null
             nextBlock = if blocks[key + 1]? then blocks[key + 1] else null
 
@@ -520,6 +524,11 @@ class Parser
                         # combine 3 blocks
                         blocks[key - 1] = [prevBlock[0], prevBlock[1], nextBlock[2], null]
                         blocks.splice key, 2
+
+                        # do not move
+                        moved = yes
+
+            key += 1 if not moved
 
         @call 'afterOptimizeBlocks', blocks, lines
 

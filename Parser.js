@@ -574,11 +574,13 @@
     };
 
     Parser.prototype.optimizeBlocks = function(_blocks, _lines) {
-      var block, blocks, from, isEmpty, j, key, len, lines, nextBlock, prevBlock, to, type, types;
+      var block, blocks, from, isEmpty, key, lines, moved, nextBlock, prevBlock, to, type, types;
       blocks = _blocks.slice(0);
       lines = _lines.slice(0);
       blocks = this.call('beforeOptimizeBlocks', blocks, lines);
-      for (key = j = 0, len = blocks.length; j < len; key = ++j) {
+      key = 0;
+      while (blocks[key] != null) {
+        moved = false;
         block = blocks[key];
         prevBlock = blocks[key - 1] != null ? blocks[key - 1] : null;
         nextBlock = blocks[key + 1] != null ? blocks[key + 1] : null;
@@ -597,8 +599,12 @@
             if (prevBlock[0] === nextBlock[0] && (types.indexOf(prevBlock[0])) >= 0) {
               blocks[key - 1] = [prevBlock[0], prevBlock[1], nextBlock[2], null];
               blocks.splice(key, 2);
+              moved = true;
             }
           }
+        }
+        if (!moved) {
+          key += 1;
         }
       }
       return this.call('afterOptimizeBlocks', blocks, lines);
