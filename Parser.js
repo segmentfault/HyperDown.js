@@ -854,6 +854,9 @@
     Parser.prototype.cleanUrl = function(url) {
       var matches;
       if (!!(matches = url.match(/^\s*((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)/i))) {
+        matches[1];
+      }
+      if (!!(matches = url.match(/^\s*([x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&]+)/i))) {
         return matches[1];
       } else {
         return '#';
