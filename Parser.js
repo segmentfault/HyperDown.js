@@ -108,7 +108,8 @@
       this.id = 0;
       text = this.initText(text);
       html = this.parse(text);
-      return this.makeFootnotes(html);
+      html = this.makeFootnotes(html);
+      return this.call('makeHtml', html);
     };
 
     Parser.prototype.hook = function(type, cb) {

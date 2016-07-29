@@ -84,8 +84,9 @@ class Parser
 
         text = @initText text
         html = @parse text
+        html = @makeFootnotes html
 
-        @makeFootnotes html
+        @call 'makeHtml', html
 
     
     hook: (type, cb) ->
