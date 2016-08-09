@@ -224,7 +224,7 @@
           var link, matches, url;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
           url = _this.cleanUrl(matches[1]);
-          link = _this.call('parseLink', $matches[1]);
+          link = _this.call('parseLink', matches[1]);
           return _this.makeHolder("<a href=\"" + url + "\">" + link + "</a>");
         };
       })(this));

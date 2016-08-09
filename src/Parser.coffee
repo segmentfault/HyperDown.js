@@ -182,7 +182,7 @@ class Parser
         # link
         text = text.replace /<(https?:\/\/.+)>/ig, (matches...) =>
             url = @cleanUrl matches[1]
-            link = @call 'parseLink', $matches[1]
+            link = @call 'parseLink', matches[1]
 
             @makeHolder "<a href=\"#{url}\">#{link}</a>"
 
