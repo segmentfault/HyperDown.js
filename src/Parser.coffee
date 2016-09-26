@@ -163,7 +163,7 @@ class Parser
     releaseHolder: (text, clearHolders = yes) ->
         deep = 0
 
-        while (text.indexOf "|\r") >= 0 and deep < 10
+        while (text.indexOf "\r") >= 0 and deep < 10
             text = str_replace (array_keys @holders), (array_values @holders), text
             deep += 1
 

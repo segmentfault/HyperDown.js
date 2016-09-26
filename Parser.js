@@ -191,7 +191,7 @@
         clearHolders = true;
       }
       deep = 0;
-      while ((text.indexOf("|\r")) >= 0 && deep < 10) {
+      while ((text.indexOf("\r")) >= 0 && deep < 10) {
         text = str_replace(array_keys(this.holders), array_values(this.holders), text);
         deep += 1;
       }
