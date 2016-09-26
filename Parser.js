@@ -212,6 +212,15 @@
         enableAutoLink = true;
       }
       text = this.call('beforeParseInline', text);
+      text = text.replace(/\\(.)/g, (function(_this) {
+        return function() {
+          var escaped, matches;
+          matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+          escaped = htmlspecialchars(matches[1]);
+          escaped = escaped.replace(/\$/g, '&dollar;');
+          return _this.makeHolder(escaped);
+        };
+      })(this));
       text = text.replace(/(^|[^\\])(`+)(.+?)\2/mg, (function(_this) {
         return function() {
           var matches;
@@ -288,15 +297,6 @@
           escaped = _this.parseInline(_this.escapeBracket(matches[1]), '', false, false);
           result = _this.definitions[matches[2]] != null ? "<a href=\"" + _this.definitions[matches[2]] + "\">" + escaped + "</a>" : escaped;
           return _this.makeHolder(result);
-        };
-      })(this));
-      text = text.replace(/\\(x80-xff|.)/g, (function(_this) {
-        return function() {
-          var escaped, matches;
-          matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-          escaped = htmlspecialchars(matches[1]);
-          escaped = escaped.replace(/\$/g, '&dollar;');
-          return _this.makeHolder(escaped);
         };
       })(this));
       text = this.parseInlineCallback(text);

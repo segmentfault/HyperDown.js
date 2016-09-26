@@ -175,6 +175,12 @@ class Parser
     parseInline: (text, whiteList = '', clearHolders = yes, enableAutoLink = yes) ->
         text = @call 'beforeParseInline', text
 
+        # escape
+        text = text.replace /\\(.)/g, (matches...) =>
+            escaped = htmlspecialchars matches[1]
+            escaped = escaped.replace /\$/g, '&dollar;'
+            @makeHolder escaped
+
         # code
         text = text.replace /(^|[^\\])(`+)(.+?)\2/mg, (matches...) =>
             matches[1] + @makeHolder '<code>' + (htmlspecialchars matches[3]) + '</code>'
@@ -232,12 +238,6 @@ class Parser
             result = if @definitions[matches[2]]? then "<a href=\"#{@definitions[matches[2]]}\">#{escaped}</a>" else escaped
 
             @makeHolder result
-
-        # escape
-        text = text.replace /\\(x80-xff|.)/g, (matches...) =>
-            escaped = htmlspecialchars matches[1]
-            escaped = escaped.replace /\$/g, '&dollar;'
-            @makeHolder escaped
 
         # strong and em and some fuck
         text = @parseInlineCallback text
