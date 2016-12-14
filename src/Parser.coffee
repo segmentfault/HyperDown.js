@@ -173,17 +173,17 @@ class Parser
 
     # parse inline
     parseInline: (text, whiteList = '', clearHolders = yes, enableAutoLink = yes) ->
-        text = @call 'beforeParseInline', text
+        text = @call 'beforeParseInline', text 
+
+        # code
+        text = text.replace /(^|[^\\])(`+)(.+?)\2/mg, (matches...) =>
+            matches[1] + @makeHolder '<code>' + (htmlspecialchars matches[3]) + '</code>'
 
         # escape
         text = text.replace /\\(.)/g, (matches...) =>
             escaped = htmlspecialchars matches[1]
             escaped = escaped.replace /\$/g, '&dollar;'
             @makeHolder escaped
-
-        # code
-        text = text.replace /(^|[^\\])(`+)(.+?)\2/mg, (matches...) =>
-            matches[1] + @makeHolder '<code>' + (htmlspecialchars matches[3]) + '</code>'
         
         # link
         text = text.replace /<(https?:\/\/.+)>/ig, (matches...) =>
