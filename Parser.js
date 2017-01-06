@@ -248,7 +248,7 @@
           }
         };
       })(this));
-      text = text.replace(/<!--.+-->/ig, (function(_this) {
+      text = text.replace(/<!--.*-->/ig, (function(_this) {
         return function() {
           var matches;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
