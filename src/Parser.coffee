@@ -199,7 +199,7 @@ class Parser
                 htmlspecialchars matches[0]
 
         # comment
-        text = text.replace /<!--.+-->/ig, (matches...) =>
+        text = text.replace /<!--.*-->/ig, (matches...) =>
             @makeHolder matches[0]
 
         text = str_replace ['<', '>'], ['&lt;', '&gt;'], text
