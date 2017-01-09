@@ -749,9 +749,9 @@ class Parser
 
 
     cleanUrl: (url) ->
-        if !!(matches = url.match /^\s*((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)/i)
+        if !!(matches = url.match /^\s*((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#!@\?\+=~\|\,&\(\)]+)/i)
             matches[1]
-        if !!(matches = url.match /^\s*([x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&]+)/i)
+        if !!(matches = url.match /^\s*([x80-xff_a-z0-9-\.\/%#!@\?\+=~\|\,&]+)/i)
             matches[1]
         else
             '#'
