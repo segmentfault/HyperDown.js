@@ -72,6 +72,7 @@ class Parser
         @specialWhiteList =
             table:  'table|tbody|thead|tfoot|tr|td|th'
         @hooks = {}
+        @html = no
 
     
     # parse markdown text
@@ -87,6 +88,9 @@ class Parser
         html = @makeFootnotes html
 
         @call 'makeHtml', html
+
+
+    enableHtml: (@html = yes) ->
 
     
     hook: (type, cb) ->
@@ -317,6 +321,20 @@ class Parser
             else if @isBlock 'code'
                 @setBlock key
                 continue
+
+            # super html mode
+            if @html
+                if !!(matches = line.match /^(\s*)!!!(\s*)$/i)
+                    if @isBlock 'shtml'
+                        @setBlock key
+                            .endBlock()
+                    else
+                        @startBlock 'shtml', key
+
+                    continue
+                else if @isBlock 'shtml'
+                    @setBlock key
+                    continue
 
             # html block is special too
             if !!(matches = line.match new RegExp "^\\s*<(#{special})(\\s+[^>]*)?>", 'i')
@@ -567,6 +585,10 @@ class Parser
         str = lines.join "\n"
 
         if str.match /^\s*$/ then '' else '<pre><code>' + str + '</code></pre>'
+
+
+    parseShtml: (lines) ->
+        trim (lines.slice 1, -1).join "\n"
 
 
     parseSh: (lines, num) ->

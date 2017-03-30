@@ -97,6 +97,7 @@
         table: 'table|tbody|thead|tfoot|tr|td|th'
       };
       this.hooks = {};
+      this.html = false;
     }
 
     Parser.prototype.makeHtml = function(text) {
@@ -110,6 +111,10 @@
       html = this.parse(text);
       html = this.makeFootnotes(html);
       return this.call('makeHtml', html);
+    };
+
+    Parser.prototype.enableHtml = function(html1) {
+      this.html = html1 != null ? html1 : true;
     };
 
     Parser.prototype.hook = function(type, cb) {
@@ -409,6 +414,19 @@
           this.setBlock(key);
           continue;
         }
+        if (this.html) {
+          if (!!(matches = line.match(/^(\s*)!!!(\s*)$/i))) {
+            if (this.isBlock('shtml')) {
+              this.setBlock(key).endBlock();
+            } else {
+              this.startBlock('shtml', key);
+            }
+            continue;
+          } else if (this.isBlock('shtml')) {
+            this.setBlock(key);
+            continue;
+          }
+        }
         if (!!(matches = line.match(new RegExp("^\\s*<(" + special + ")(\\s+[^>]*)?>", 'i')))) {
           tag = matches[1].toLowerCase();
           if (!(this.isBlock('html', tag)) && !(this.isBlock('pre'))) {
@@ -648,6 +666,10 @@
       } else {
         return '<pre><code>' + str + '</code></pre>';
       }
+    };
+
+    Parser.prototype.parseShtml = function(lines) {
+      return trim((lines.slice(1, -1)).join("\n"));
     };
 
     Parser.prototype.parseSh = function(lines, num) {
