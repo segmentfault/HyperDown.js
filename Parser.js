@@ -270,7 +270,7 @@
         return function() {
           var escaped, matches, url;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-          escaped = _this.escapeBracket(matches[1]);
+          escaped = htmlspecialchars(_this.escapeBracket(matches[1]));
           url = _this.escapeBracket(matches[2]);
           url = _this.cleanUrl(url);
           return _this.makeHolder("<img src=\"" + url + "\" alt=\"" + escaped + "\" title=\"" + escaped + "\">");
@@ -280,7 +280,7 @@
         return function() {
           var escaped, matches, result;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-          escaped = _this.escapeBracket(matches[1]);
+          escaped = htmlspecialchars(_this.escapeBracket(matches[1]));
           result = _this.definitions[matches[2]] != null ? "<img src=\"" + _this.definitions[matches[2]] + "\" alt=\"" + escaped + "\" title=\"" + escaped + "\">" : escaped;
           return _this.makeHolder(result);
         };

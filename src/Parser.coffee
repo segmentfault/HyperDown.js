@@ -217,13 +217,13 @@ class Parser
 
         # image
         text = text.replace /!\[((?:[^\]]|\\\]|\\\[)*?)\]\(((?:[^\)]|\\\)|\\\()+?)\)/g, (matches...) =>
-            escaped = @escapeBracket matches[1]
+            escaped = htmlspecialchars @escapeBracket matches[1]
             url = @escapeBracket matches[2]
             url = @cleanUrl url
             @makeHolder "<img src=\"#{url}\" alt=\"#{escaped}\" title=\"#{escaped}\">"
 
         text = text.replace /!\[((?:[^\]]|\\\]|\\\[)*?)\]\[((?:[^\]]|\\\]|\\\[)+?)\]/g, (matches...) =>
-            escaped = @escapeBracket matches[1]
+            escaped = htmlspecialchars @escapeBracket matches[1]
 
             result = if @definitions[matches[2]]? then "<img src=\"#{@definitions[matches[2]]}\" alt=\"#{escaped}\" title=\"#{escaped}\">" else escaped
 
