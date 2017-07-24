@@ -132,7 +132,7 @@ class Parser
 
 
     # parse text
-    parse: (text) ->
+    parse: (text, inline = no) ->
         lines = []  # array ref
         blocks = @parseBlock text, lines
         html = ''
@@ -147,6 +147,11 @@ class Parser
             result = @call ('after' + ucfirst method), result, value
 
             html += result
+
+        # inline mode for single normal block
+        if inline and blocks.length is 1 and blocks[0][0] is 'normal'
+            # remove p tag
+            html = html.replace /^\s*<p>(.*)<\/p>\s*$/m, '$1'
 
         html
 
@@ -642,7 +647,7 @@ class Parser
                     leftLines.push line.replace (new RegExp "^\\s{#{secondMinSpace}}"), ''
                 else
                     if leftLines.length > 0
-                        html += '<li>' + (@parse leftLines.join "\n") + '</li>'
+                        html += '<li>' + (@parse (leftLines.join "\n"), yes) + '</li>'
 
                     if lastType != type
                         if !!lastType
@@ -656,7 +661,7 @@ class Parser
                 leftLines.push row.replace (new RegExp "^\\s{#{secondMinSpace}}"), ''
 
         if leftLines.length > 0
-            html += '<li>' + (@parse leftLines.join "\n") + "</li></#{lastType}>"
+            html += '<li>' + (@parse (leftLines.join "\n"), yes) + "</li></#{lastType}>"
 
         html
 
