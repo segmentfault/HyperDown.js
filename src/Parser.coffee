@@ -182,7 +182,7 @@ class Parser
 
     # parse inline
     parseInline: (text, whiteList = '', clearHolders = yes, enableAutoLink = yes) ->
-        text = @call 'beforeParseInline', text 
+        text = @call 'beforeParseInline', text
 
         # code
         text = text.replace /(^|[^\\])(`+)(.+?)\2/mg, (matches...) =>
@@ -382,12 +382,12 @@ class Parser
                         @startBlock 'list', key, space
 
                 # foot note
-                when !!(matches = line.match /^\[\^((?:[^\]]|\]|\[)+?)\]:/)
+                when !!(matches = line.match /^\[\^((?:[^\]]|\\\]|\\\[)+?)\]:/)
                     space = matches[0].length - 1
                     @startBlock 'footnote', key, [space, matches[1]]
 
                 # definition
-                when !!(matches = line.match /^\s*\[((?:[^\]]|\]|\[)+?)\]:\s*(.+)$/)
+                when !!(matches = line.match /^\s*\[((?:[^\]]|\\\]|\\\[)+?)\]:\s*(.+)$/)
                     @definitions[matches[1]] = @cleanUrl matches[2]
                     @startBlock 'definition', key
                         .endBlock()

@@ -7,7 +7,7 @@
   },
   "license": "BSD-4-Clause",
   "author": "SegmentFault",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "scripts": {
     "test": "mocha",
     "build": "cake build"
