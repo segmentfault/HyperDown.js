@@ -304,7 +304,7 @@ class Parser
             block = @getBlock()
             block = block.slice 0 if block?
 
-            if !!(matches = line.match /^(\s*)(~|`){3,}([^`~]*)$/i)
+            if !!(matches = line.match /^(\s*)(~{3,}|`{3,})([^`~]*)$/i)
                 if @isBlock 'code'
                     isAfterList = block[3][2]
 
