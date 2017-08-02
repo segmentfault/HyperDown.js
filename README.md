@@ -3,9 +3,9 @@ HyperDown.js
 
 这是 js 版本 HyperDown (使用CoffeeScript实现)
 
-##使用方法##
+## 使用方法
 
-###nodejs 中使用##
+### nodejs 中使用
 
 安装
 
@@ -23,7 +23,7 @@ var parser = new HyperDown,
 ```
 
 
-###浏览器中使用##
+### 浏览器中使用
 
 直接引用`Parser.js`即可
 
@@ -35,7 +35,7 @@ var parser = new HyperDown,
 </script>
 ```
 
-###单元测试###
+### 单元测试
 
 ```bash
 npm test
