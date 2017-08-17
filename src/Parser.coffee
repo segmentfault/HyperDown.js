@@ -187,6 +187,10 @@ class Parser
         # code
         text = text.replace /(^|[^\\])(`+)(.+?)\2/mg, (matches...) =>
             matches[1] + @makeHolder '<code>' + (htmlspecialchars matches[3]) + '</code>'
+        
+        # mathjax
+        text = text.replace /(^|[^\\])(\$+)(.+?)\2/mg, (matches...) =>
+            matches[1] + @makeHolder matches[2] + (htmlspecialchars matches[3]) + matches[2]
 
         # escape
         text = text.replace /\\(.)/g, (matches...) =>
@@ -329,7 +333,7 @@ class Parser
 
             # super html mode
             if @html
-                if !!(matches = line.match /^(\s*)!!!(\s*)$/i)
+                if !!(matches = line.match /^(\s*)!!!(\s*)$/)
                     if @isBlock 'shtml'
                         @setBlock key
                             .endBlock()
@@ -338,6 +342,20 @@ class Parser
 
                     continue
                 else if @isBlock 'shtml'
+                    @setBlock key
+                    continue
+
+            # mathjax mode
+            if @html
+                if !!(matches = line.match /^(\s*)\$\$(\s*)$/)
+                    if @isBlock 'math'
+                        @setBlock key
+                            .endBlock()
+                    else
+                        @startBlock 'math', key
+
+                    continue
+                else if @isBlock 'math'
                     @setBlock key
                     continue
 
@@ -594,6 +612,10 @@ class Parser
 
     parseShtml: (lines) ->
         trim (lines.slice 1, -1).join "\n"
+
+
+    parseMath: (lines) ->
+        '<p>' + (htmlspecialchars lines.join "\n") + '</p>'
 
 
     parseSh: (lines, num) ->
