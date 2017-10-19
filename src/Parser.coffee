@@ -258,7 +258,7 @@ class Parser
 
         # autolink url
         if  enableAutoLink
-            text = text.replace /(^|[^"])((https?):[x80-xff_a-z0-9-\.\/%#!@\?\+=~\|\,&\(\)]+)($|[^"])/ig, (matches...) =>
+            text = text.replace /(^|[^"])((https?):[_a-z0-9-\.\/%#!@\?\+=~\|\,&\(\)]+)($|[^"])/ig, (matches...) =>
                 link = @call 'parseLink', matches[2]
                 "#{matches[1]}<a href=\"#{matches[2]}\">#{link}</a>#{matches[4]}"
 

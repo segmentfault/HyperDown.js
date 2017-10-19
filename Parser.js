@@ -320,7 +320,7 @@
       text = this.parseInlineCallback(text);
       text = text.replace(/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, '<a href="mailto:$1">$1</a>');
       if (enableAutoLink) {
-        text = text.replace(/(^|[^"])((https?):[x80-xff_a-z0-9-\.\/%#!@\?\+=~\|\,&\(\)]+)($|[^"])/ig, (function(_this) {
+        text = text.replace(/(^|[^"])((https?):[_a-z0-9-\.\/%#!@\?\+=~\|\,&\(\)]+)($|[^"])/ig, (function(_this) {
           return function() {
             var link, matches;
             matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
