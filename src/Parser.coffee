@@ -349,18 +349,40 @@ class Parser
                     continue
 
             # mathjax mode
-            if @html
-                if !!(matches = line.match /^(\s*)\$\$(\s*)$/)
-                    if @isBlock 'math'
-                        @setBlock key
-                            .endBlock()
-                    else
-                        @startBlock 'math', key
-
-                    continue
-                else if @isBlock 'math'
+            if !!(matches = line.match /^(\s*)\$\$(\s*)$/)
+                if @isBlock 'math'
                     @setBlock key
-                    continue
+                        .endBlock()
+                else
+                    @startBlock 'math', key
+
+                continue
+            else if @isBlock 'math'
+                @setBlock key
+                continue
+
+            # pre block
+            if !!(line.match /^ {4}/)
+                emptyCount = 0
+
+                if (@isBlock 'pre') or @isBlock 'list'
+                    @setBlock key
+                else
+                    @startBlock 'pre', key
+                
+                continue
+            else if @isBlock 'pre'
+                if line.match /^\s*$/
+                    if emptyCount > 0
+                        @startBlock 'normal', key
+                    else
+                        @setBlock key
+
+                    emptyCount += 1
+                else
+                    @startBlock 'normal', key
+                
+                continue
 
             # html block is special too
             if !!(matches = line.match new RegExp "^\\s*<(#{special})(\\s+[^>]*)?>", 'i')
@@ -382,15 +404,6 @@ class Parser
                 continue
 
             switch true
-                # pre block
-                when !!(line.match /^ {4}/)
-                    emptyCount = 0
-
-                    if (@isBlock 'pre') or @isBlock 'list'
-                        @setBlock key
-                    else
-                        @startBlock 'pre', key
-
                 # list
                 when !!(matches = line.match /^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/)
                     space = matches[1].length
@@ -504,16 +517,6 @@ class Parser
                         if 0 <= line.indexOf '|'
                             block[3][2] += 1
                             @setBlock key, block[3]
-                        else
-                            @startBlock 'normal', key
-                    else if @isBlock 'pre'
-                        if line.match /^\s*$/
-                            if emptyCount > 0
-                                @startBlock 'normal', key
-                            else
-                                @setBlock key
-
-                            emptyCount += 1
                         else
                             @startBlock 'normal', key
                     else if @isBlock 'quote'
