@@ -209,7 +209,7 @@ class Parser
 
         # encode unsafe tags
         text = text.replace /<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/ig, (matches...) =>
-            if (('|' + @commonWhiteList + '|' + whiteList + '|').indexOf '|' + matches[2].toLowerCase() + '|') >= 0
+            if @html or (('|' + @commonWhiteList + '|' + whiteList + '|').indexOf '|' + matches[2].toLowerCase() + '|') >= 0
                 @makeHolder matches[0]
             else
                 htmlspecialchars matches[0]
