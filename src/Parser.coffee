@@ -427,8 +427,10 @@ class Parser
                         .endBlock()
 
                 # block quote
-                when !!(line.match /^\s*>/)
-                    if @isBlock 'quote'
+                when !!(matches = line.match /^(\s*)>/)
+                    if (@isBlock 'list') and matches[1].length > 0
+                        @setBlock key
+                    else if @isBlock 'quote'
                         @setBlock key
                     else
                         @startBlock 'quote', key
@@ -496,13 +498,18 @@ class Parser
                 # normal
                 else
                     if @isBlock 'list'
-                        if line.match /^(\s*)/
-                            if emptyCount > 0
+                        if !!(matches = line.match /^(\s*)/)
+                            indent = matches[1].length > 0
+
+                            if emptyCount > 0 and not indent
                                 @startBlock 'normal', key
                             else
                                 @setBlock key
 
-                            emptyCount += 1
+                            if indent
+                                emptyCount = 0
+                            else
+                                emptyCount += 1
                         else if emptyCount == 0
                             @setBlock key
                         else
@@ -520,14 +527,7 @@ class Parser
                         else
                             @startBlock 'normal', key
                     else if @isBlock 'quote'
-                        if line.match /^(\s*)/      # empty line
-                            if emptyCount > 0
-                                @startBlock 'normal', key
-                            else
-                                @setBlock key
-
-                            emptyCount += 1
-                        else if emptyCount == 0
+                        if not line.match /^(\s*)$/      # empty line
                             @setBlock key
                         else
                             @startBlock 'normal', key
@@ -644,6 +644,8 @@ class Parser
     parseList: (lines) ->
         html = ''
         minSpace = 99999
+        secondMinSpace = 99999
+        found = no
         rows = []
 
         for line, key in lines
@@ -656,12 +658,13 @@ class Parser
             else
                 rows.push line
 
-        found = no
-        secondMinSpace = 99999
-        for row in rows
-            if row instanceof Array and row[0] != minSpace
-                secondMinSpace = Math.min secondMinSpace, row[0]
-                found = yes
+                if !!(matches = line.match /^(\s*)/)
+                    space = matches[1].length
+
+                    if space > 0
+                        secondMinSpace = Math.min space, secondMinSpace
+                        found = yes
+
         secondMinSpace = if found then secondMinSpace else minSpace
 
         lastType = ''
