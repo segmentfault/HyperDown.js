@@ -173,7 +173,6 @@ class Parser
     # release holder
     releaseHolder: (text, clearHolders = yes) ->
         deep = 0
-
         while (text.indexOf "\r") >= 0 and deep < 10
             text = str_replace (array_keys @holders), (array_values @holders), text
             deep += 1
@@ -213,6 +212,10 @@ class Parser
                 @makeHolder matches[0]
             else
                 htmlspecialchars matches[0]
+
+        # comment
+        text = text.replace /<!--.*-->/ig, (matches...) =>
+            @makeHolder matches[0]
 
         text = str_replace ['<', '>'], ['&lt;', '&gt;'], text
 
@@ -267,7 +270,6 @@ class Parser
 
         text = @call 'afterParseInlineBeforeRelease', text
         text = @releaseHolder text, clearHolders
-
         text = @call 'afterParseInline', text
 
         text

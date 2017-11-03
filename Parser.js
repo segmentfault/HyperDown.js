@@ -269,6 +269,13 @@
           }
         };
       })(this));
+      text = text.replace(/<!--.*-->/ig, (function(_this) {
+        return function() {
+          var matches;
+          matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+          return _this.makeHolder(matches[0]);
+        };
+      })(this));
       text = str_replace(['<', '>'], ['&lt;', '&gt;'], text);
       text = text.replace(/\[\^((?:[^\]]|\\\]|\\\[)+?)\]/g, (function(_this) {
         return function() {
