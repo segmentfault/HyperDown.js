@@ -306,6 +306,7 @@ class Parser
         @pos = -1
         special = (array_keys @specialWhiteList).join '|'
         emptyCount = 0
+        autoHtml = no
 
         for line, key in lines
             block = @getBlock()
@@ -336,7 +337,7 @@ class Parser
 
             # super html mode
             if @html
-                if !!(matches = line.match /^(\s*)!!!(\s*)$/)
+                if !autoHtml and !!(matches = line.match /^(\s*)!!!(\s*)$/)
                     if @isBlock 'shtml'
                         @setBlock key
                             .endBlock()
@@ -345,6 +346,29 @@ class Parser
 
                     continue
                 else if @isBlock 'shtml'
+                    @setBlock key
+                    continue
+
+                # auto html
+                if matches = line.match /^\s*<([a-z0-9-]+)(\s+[^>]*)?>/i
+                    if @isBlock 'ahtml'
+                        @setBlock key
+                        continue
+                    else if (matches[2] is undefined or matches[2] isnt '/') and not matches[1].match /^(area|base|br|col|embed|hr|img|input|keygen|link|meta|param|source|track|wbr)$/i
+                        @startBlock 'ahtml', key
+
+                        if 0 <= line.indexOf "</#{matches[1]}>"
+                            @endBlock()
+                        else
+                            autoHtml = matches[1]
+                        
+                        continue
+                else if !!autoHtml and 0 <= line.indexOf "</#{autoHtml}>"
+                    @setBlock key
+                        .endBlock()
+                    autoHtml = no
+                    continue
+                else if @isBlock 'ahtml'
                     @setBlock key
                     continue
 
@@ -614,6 +638,10 @@ class Parser
         str = lines.join "\n"
 
         if str.match /^\s*$/ then '' else '<pre><code>' + str + '</code></pre>'
+
+
+    parseAhtml: (lines) ->
+        trim lines.join "\n"
 
 
     parseShtml: (lines) ->
