@@ -71,6 +71,7 @@ class Parser
 
     constructor: ->
         @commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a|hr|small'
+        @blockHtmlTags = 'p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|address|form|fieldset|iframe|hr|legend|article|section|nav|aside|hgroup|header|footer|figcaption|svg|script|noscript'
         @specialWhiteList =
             table:  'table|tbody|thead|tfoot|tr|td|th'
         @hooks = {}
@@ -350,17 +351,23 @@ class Parser
                     continue
 
                 # auto html
-                if matches = line.match /^\s*<([a-z0-9-]+)(\s+[^>]*)?>/i
+                htmlTagRegExp = new RegExp "^\\s*<(#{@blockHtmlTags})(\\s+[^>]*)?>", 'i'
+                if matches = line.match htmlTagRegExp
                     if @isBlock 'ahtml'
                         @setBlock key
                         continue
-                    else if (matches[2] is undefined or matches[2] isnt '/') and not matches[1].match /^(area|base|br|col|embed|hr|img|input|keygen|link|meta|param|source|track|wbr)$/i
+                    else if matches[2] is undefined or matches[2] isnt '/'
                         @startBlock 'ahtml', key
+                        htmlTagAllRegExp = new RegExp "\\s*<(#{@blockHtmlTags})(\\s+[^>]*)?>", 'ig'
+                        loop
+                            m = htmlTagAllRegExp.exec line
+                            break if !m
+                            lastMatch = m[1]
 
-                        if 0 <= line.indexOf "</#{matches[1]}>"
+                        if 0 <= line.indexOf "</#{lastMatch}>"
                             @endBlock()
                         else
-                            autoHtml = matches[1]
+                            autoHtml = lastMatch
                         
                         continue
                 else if !!autoHtml and 0 <= line.indexOf "</#{autoHtml}>"
