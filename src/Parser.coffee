@@ -436,7 +436,7 @@ class Parser
 
             switch true
                 # list
-                when !!(matches = line.match /^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/)
+                when !!(matches = line.match /^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/i)
                     space = matches[1].length
                     emptyCount = 0
 
