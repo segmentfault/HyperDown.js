@@ -215,6 +215,10 @@ class Parser
             else
                 htmlspecialchars matches[0]
 
+        if @html
+            text = text.replace /<!\-\-(.*?)\-\->/g, (matches...) =>
+                @makeHolder matches[0]
+
         text = str_replace ['<', '>'], ['&lt;', '&gt;'], text
 
         # footnote
@@ -313,6 +317,24 @@ class Parser
             block = @getBlock()
             block = block.slice 0 if block?
 
+            # list
+            if !!(matches = line.match /^(\s*)((?:[0-9]+\.)|(?:[a-z]\.?)|\-|\+|\*)\s+/i)
+                space = matches[1].length
+                emptyCount = 0
+
+                # opened
+                if @isBlock 'list'
+                    @setBlock key, space
+                else
+                    @startBlock 'list', key, space
+
+                continue
+            else if @isBlock 'list'
+                if (emptyCount is 0) and !!(matches = line.match /^(\s+)/) and matches[1].length > block[3]
+                    @setBlock key
+                    continue
+
+            # code block
             if !!(matches = line.match /^(\s*)(~{3,}|`{3,})([^`~]*)$/i)
                 if @isBlock 'code'
                     isAfterList = block[3][2]
@@ -378,6 +400,10 @@ class Parser
                 else if @isBlock 'ahtml'
                     @setBlock key
                     continue
+                else if !!(matches = line.match /^\s*<!\-\-(.*?)\-\->\s*$/)
+                    @startBlock 'ahtml', key
+                        .endBlock()
+                    continue
 
             # mathjax mode
             if !!(matches = line.match /^(\s*)\$\$(\s*)$/)
@@ -435,17 +461,6 @@ class Parser
                 continue
 
             switch true
-                # list
-                when !!(matches = line.match /^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/i)
-                    space = matches[1].length
-                    emptyCount = 0
-
-                    # opened
-                    if @isBlock 'list'
-                        @setBlock key, space
-                    else
-                        @startBlock 'list', key, space
-
                 # foot note
                 when !!(matches = line.match /^\[\^((?:[^\]]|\\\]|\\\[)+?)\]:/)
                     space = matches[0].length - 1
@@ -681,17 +696,19 @@ class Parser
         minSpace = 99999
         secondMinSpace = 99999
         found = no
+        secondFound = no
         rows = []
 
         for line, key in lines
-            if matches = line.match /^(\s*)((?:[0-9a-z]+\.?)|\-|\+|\*)(\s+)(.*)$/
+            if matches = line.match /^(\s*)((?:[0-9]+\.?)|(?:[a-z]\.?)|\-|\+|\*)(\s+)(.*)$/i
                 space = matches[1].length
                 type = if 0 <= '+-*'.indexOf matches[2] then 'ul' else 'ol'
                 minSpace = Math.min space, minSpace
+                found = yes
 
                 if space > 0
                     secondMinSpace = Math.min space, secondMinSpace
-                    found = yes
+                    secondFound = yes
 
                 rows.push [space, type, line, matches[4]]
             else
@@ -702,9 +719,10 @@ class Parser
 
                     if space > 0
                         secondMinSpace = Math.min space, secondMinSpace
-                        found = yes
+                        secondFound = yes
 
-        secondMinSpace = if found then secondMinSpace else minSpace
+        minSpace = if found then minSpace else 0
+        secondMinSpace = if secondFound then secondMinSpace else minSpace
 
         lastType = ''
         leftLines = []

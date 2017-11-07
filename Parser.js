@@ -270,6 +270,15 @@
           }
         };
       })(this));
+      if (this.html) {
+        text = text.replace(/<!\-\-(.*?)\-\->/g, (function(_this) {
+          return function() {
+            var matches;
+            matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+            return _this.makeHolder(matches[0]);
+          };
+        })(this));
+      }
       text = str_replace(['<', '>'], ['&lt;', '&gt;'], text);
       text = text.replace(/\[\^((?:[^\]]|\\\]|\\\[)+?)\]/g, (function(_this) {
         return function() {
@@ -412,6 +421,21 @@
         if (block != null) {
           block = block.slice(0);
         }
+        if (!!(matches = line.match(/^(\s*)((?:[0-9]+\.)|(?:[a-z]\.?)|\-|\+|\*)\s+/i))) {
+          space = matches[1].length;
+          emptyCount = 0;
+          if (this.isBlock('list')) {
+            this.setBlock(key, space);
+          } else {
+            this.startBlock('list', key, space);
+          }
+          continue;
+        } else if (this.isBlock('list')) {
+          if ((emptyCount === 0) && !!(matches = line.match(/^(\s+)/)) && matches[1].length > block[3]) {
+            this.setBlock(key);
+            continue;
+          }
+        }
         if (!!(matches = line.match(/^(\s*)(~{3,}|`{3,})([^`~]*)$/i))) {
           if (this.isBlock('code')) {
             isAfterList = block[3][2];
@@ -474,6 +498,9 @@
           } else if (this.isBlock('ahtml')) {
             this.setBlock(key);
             continue;
+          } else if (!!(matches = line.match(/^\s*<!\-\-(.*?)\-\->\s*$/))) {
+            this.startBlock('ahtml', key).endBlock();
+            continue;
           }
         }
         if (!!(matches = line.match(/^(\s*)\$\$(\s*)$/))) {
@@ -525,15 +552,6 @@
           continue;
         }
         switch (true) {
-          case !!(matches = line.match(/^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/)):
-            space = matches[1].length;
-            emptyCount = 0;
-            if (this.isBlock('list')) {
-              this.setBlock(key, space);
-            } else {
-              this.startBlock('list', key, space);
-            }
-            break;
           case !!(matches = line.match(/^\[\^((?:[^\]]|\\\]|\\\[)+?)\]:/)):
             space = matches[0].length - 1;
             this.startBlock('footnote', key, [space, matches[1]]);
@@ -770,21 +788,23 @@
     };
 
     Parser.prototype.parseList = function(lines) {
-      var found, html, j, key, l, lastType, leftLines, len, len1, line, matches, minSpace, row, rows, secondMinSpace, space, text, type;
+      var found, html, j, key, l, lastType, leftLines, len, len1, line, matches, minSpace, row, rows, secondFound, secondMinSpace, space, text, type;
       html = '';
       minSpace = 99999;
       secondMinSpace = 99999;
       found = false;
+      secondFound = false;
       rows = [];
       for (key = j = 0, len = lines.length; j < len; key = ++j) {
         line = lines[key];
-        if (matches = line.match(/^(\s*)((?:[0-9a-z]+\.?)|\-|\+|\*)(\s+)(.*)$/)) {
+        if (matches = line.match(/^(\s*)((?:[0-9]+\.?)|(?:[a-z]\.?)|\-|\+|\*)(\s+)(.*)$/i)) {
           space = matches[1].length;
           type = 0 <= '+-*'.indexOf(matches[2]) ? 'ul' : 'ol';
           minSpace = Math.min(space, minSpace);
+          found = true;
           if (space > 0) {
             secondMinSpace = Math.min(space, secondMinSpace);
-            found = true;
+            secondFound = true;
           }
           rows.push([space, type, line, matches[4]]);
         } else {
@@ -793,12 +813,13 @@
             space = matches[1].length;
             if (space > 0) {
               secondMinSpace = Math.min(space, secondMinSpace);
-              found = true;
+              secondFound = true;
             }
           }
         }
       }
-      secondMinSpace = found ? secondMinSpace : minSpace;
+      minSpace = found ? minSpace : 0;
+      secondMinSpace = secondFound ? secondMinSpace : minSpace;
       lastType = '';
       leftLines = [];
       for (l = 0, len1 = rows.length; l < len1; l++) {
