@@ -551,7 +551,7 @@
               this.startBlock('quote', key);
             }
             break;
-          case !!(matches = line.match(/^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/)):
+          case !!(matches = line.match(/^((?:(?:(?:\||\+)(?:[ :]*\-+[ :]*)(?:\||\+))|(?:(?:[ :]*\-+[ :]*)(?:\||\+)(?:[ :]*\-+[ :]*))|(?:(?:[ :]*\-+[ :]*)(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-+[ :]*)))+)$/)):
             if (this.isBlock('table')) {
               block[3][0].push(block[3][2]);
               block[3][2] += 1;
@@ -782,6 +782,10 @@
           space = matches[1].length;
           type = 0 <= '+-*'.indexOf(matches[2]) ? 'ul' : 'ol';
           minSpace = Math.min(space, minSpace);
+          if (space > 0) {
+            secondMinSpace = Math.min(space, secondMinSpace);
+            found = true;
+          }
           rows.push([space, type, line, matches[4]]);
         } else {
           rows.push(line);

@@ -467,7 +467,7 @@ class Parser
                         @startBlock 'quote', key
 
                 # table
-                when !!(matches = line.match /^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/)
+                when !!(matches = line.match /^((?:(?:(?:\||\+)(?:[ :]*\-+[ :]*)(?:\||\+))|(?:(?:[ :]*\-+[ :]*)(?:\||\+)(?:[ :]*\-+[ :]*))|(?:(?:[ :]*\-+[ :]*)(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-+[ :]*)))+)$/)
                     if @isBlock 'table'
                         block[3][0].push block[3][2]
                         block[3][2] += 1
@@ -688,6 +688,10 @@ class Parser
                 space = matches[1].length
                 type = if 0 <= '+-*'.indexOf matches[2] then 'ul' else 'ol'
                 minSpace = Math.min space, minSpace
+
+                if space > 0
+                    secondMinSpace = Math.min space, secondMinSpace
+                    found = yes
 
                 rows.push [space, type, line, matches[4]]
             else
