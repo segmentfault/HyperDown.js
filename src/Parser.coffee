@@ -375,8 +375,13 @@ class Parser
                 @startBlock 'list', key, space
 
             return no
-        else if @isBlock 'list'
-            if (state.empty is 0) and !!(matches = line.match /^(\s+)/) and matches[1].length > block[3]
+        else if (@isBlock 'list') and not line.match /^\s*\[((?:[^\]]|\\\]|\\\[)+?)\]:\s*(.+)$/
+            if (state.empty <= 1) and !!(matches = line.match /^(\s+)/) and matches[1].length > block[3]
+                state.empty = 0
+                @setBlock key
+                return no
+            else if (line.match /^\s*$/) and state.empty is 0
+                state.empty += 1
                 @setBlock key
                 return no
 
@@ -482,25 +487,14 @@ class Parser
 
     parseBlockPre: (block, key, line, state) ->
         if !!(line.match /^ {4}/)
-            state.empty = 0
-
             if @isBlock 'pre'
                 @setBlock key
             else
                 @startBlock 'pre', key
                 
             return no
-        else if @isBlock 'pre'
-            if line.match /^\s*$/
-                if state.empty > 0
-                    @startBlock 'normal', key
-                else
-                    @setBlock key
-
-                state.empty += 1
-            else
-                @startBlock 'normal', key
-                
+        else if (@isBlock 'pre') and line.match /^\s*$/
+            @setBlock key
             return no
 
         yes
@@ -642,24 +636,7 @@ class Parser
 
 
     parseBlockDefault: (block, key, line, state) ->
-        if @isBlock 'list'
-            if !!(matches = line.match /^(\s*)/)
-                indent = matches[1].length > 0
-
-                if state.empty > 0 and not indent
-                    @startBlock 'normal', key
-                else
-                    @setBlock key
-
-                if indent
-                    state.empty = 0
-                else
-                    state.empty += 1
-            else if state.empty == 0
-                @setBlock key
-            else
-                @startBlock 'normal', key
-        else if @isBlock 'footnote'
+        if @isBlock 'footnote'
             matches = line.match /^(\s*)/
             if matches[1].length >= block[3][0]
                 @setBlock key
