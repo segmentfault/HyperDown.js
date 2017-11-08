@@ -78,10 +78,10 @@ class Parser
         @html = no
 
         @blockParsers = [
-            ['list', 10]
-            ['code', 20]
-            ['shtml', 30]
-            ['ahtml', 40]
+            ['code', 10]
+            ['shtml', 20]
+            ['ahtml', 30]
+            ['list', 40]
             ['math', 50]
             ['pre', 60]
             ['html', 70]
@@ -412,7 +412,7 @@ class Parser
 
     parseBlockShtml: (block, key, line, state) ->
         if @html
-            if !state.html and !!(matches = line.match /^(\s*)!!!(\s*)$/)
+            if !!(matches = line.match /^(\s*)!!!(\s*)$/)
                 if @isBlock 'shtml'
                     @setBlock key
                         .endBlock()
@@ -484,7 +484,7 @@ class Parser
         if !!(line.match /^ {4}/)
             state.empty = 0
 
-            if (@isBlock 'pre') or @isBlock 'list'
+            if @isBlock 'pre'
                 @setBlock key
             else
                 @startBlock 'pre', key

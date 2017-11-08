@@ -101,7 +101,7 @@
       };
       this.hooks = {};
       this.html = false;
-      this.blockParsers = [['list', 10], ['code', 20], ['shtml', 30], ['ahtml', 40], ['math', 50], ['pre', 60], ['html', 70], ['footnote', 80], ['definition', 90], ['quote', 100], ['table', 110], ['sh', 120], ['mh', 130], ['hr', 140], ['default', 9999]];
+      this.blockParsers = [['code', 10], ['shtml', 20], ['ahtml', 30], ['list', 40], ['math', 50], ['pre', 60], ['html', 70], ['footnote', 80], ['definition', 90], ['quote', 100], ['table', 110], ['sh', 120], ['mh', 130], ['hr', 140], ['default', 9999]];
       this.parsers = {};
     }
 
@@ -511,7 +511,7 @@
     Parser.prototype.parseBlockShtml = function(block, key, line, state) {
       var matches;
       if (this.html) {
-        if (!state.html && !!(matches = line.match(/^(\s*)!!!(\s*)$/))) {
+        if (!!(matches = line.match(/^(\s*)!!!(\s*)$/))) {
           if (this.isBlock('shtml')) {
             this.setBlock(key).endBlock();
           } else {
@@ -585,7 +585,7 @@
     Parser.prototype.parseBlockPre = function(block, key, line, state) {
       if (!!(line.match(/^ {4}/))) {
         state.empty = 0;
-        if ((this.isBlock('pre')) || this.isBlock('list')) {
+        if (this.isBlock('pre')) {
           this.setBlock(key);
         } else {
           this.startBlock('pre', key);
