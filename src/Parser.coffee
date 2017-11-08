@@ -77,6 +77,25 @@ class Parser
         @hooks = {}
         @html = no
 
+        @blockParsers = [
+            ['list', 10]
+            ['code', 20]
+            ['shtml', 30]
+            ['ahtml', 40]
+            ['math', 50]
+            ['pre', 60]
+            ['html', 70]
+            ['footnote', 80]
+            ['definition', 90]
+            ['quote', 100]
+            ['table', 110]
+            ['sh', 120]
+            ['mh', 130]
+            ['hr', 140]
+            ['default', 9999]
+        ]
+        @parsers = {}
+
     
     # parse markdown text
     makeHtml: (text) ->
@@ -85,6 +104,16 @@ class Parser
         @holders = {}
         @uniqid = (Math.ceil Math.random() * 10000000) + (Math.ceil Math.random() * 10000000)
         @id = 0
+
+        @blockParsers.sort (a, b) -> if a[1] < b[1] then -1 else 1
+        
+        for parser in @blockParsers
+            [name] = parser
+
+            if parser[2] isnt undefined
+                @parsers[name] = parser[2]
+            else
+                @parsers[name] = @['parseBlock' + (ucfirst name)].bind @
 
         text = @initText text
         html = @parse text
@@ -309,281 +338,351 @@ class Parser
         @blocks = []
         @current = 'normal'
         @pos = -1
-        special = (array_keys @specialWhiteList).join '|'
-        emptyCount = 0
-        autoHtml = no
+
+        state =
+            special: (array_keys @specialWhiteList).join '|'
+            empty: 0
+            html: no
 
         for line, key in lines
             block = @getBlock()
             block = block.slice 0 if block?
 
-            # list
-            if !!(matches = line.match /^(\s*)((?:[0-9]+\.)|(?:[a-z]\.?)|\-|\+|\*)\s+/i)
-                space = matches[1].length
-                emptyCount = 0
+            if @current isnt 'normal'
+                pass = @parsers[@current] block, key, line, state, lines
+                continue if not pass
 
-                # opened
-                if @isBlock 'list'
-                    @setBlock key, space
-                else
-                    @startBlock 'list', key, space
-
-                continue
-            else if @isBlock 'list'
-                if (emptyCount is 0) and !!(matches = line.match /^(\s+)/) and matches[1].length > block[3]
-                    @setBlock key
-                    continue
-
-            # code block
-            if !!(matches = line.match /^(\s*)(~{3,}|`{3,})([^`~]*)$/i)
-                if @isBlock 'code'
-                    isAfterList = block[3][2]
-
-                    if isAfterList
-                        @combineBlock().setBlock(key)
-                    else
-                        (@setBlock key).endBlock()
-                else
-                    isAfterList = no
-
-                    if @isBlock 'list'
-                        space = block[3]
-
-                        isAfterList = (space > 0 && matches[1].length >= space) || matches[1].length > space
-
-                    @startBlock 'code', key, [matches[1], matches[3], isAfterList]
-
-                continue
-            else if @isBlock 'code'
-                @setBlock key
-                continue
-
-            # super html mode
-            if @html
-                if !autoHtml and !!(matches = line.match /^(\s*)!!!(\s*)$/)
-                    if @isBlock 'shtml'
-                        @setBlock key
-                            .endBlock()
-                    else
-                        @startBlock 'shtml', key
-
-                    continue
-                else if @isBlock 'shtml'
-                    @setBlock key
-                    continue
-
-                # auto html
-                htmlTagRegExp = new RegExp "^\\s*<(#{@blockHtmlTags})(\\s+[^>]*)?>", 'i'
-                if matches = line.match htmlTagRegExp
-                    if @isBlock 'ahtml'
-                        @setBlock key
-                        continue
-                    else if matches[2] is undefined or matches[2] isnt '/'
-                        @startBlock 'ahtml', key
-                        htmlTagAllRegExp = new RegExp "\\s*<(#{@blockHtmlTags})(\\s+[^>]*)?>", 'ig'
-                        loop
-                            m = htmlTagAllRegExp.exec line
-                            break if !m
-                            lastMatch = m[1]
-
-                        if 0 <= line.indexOf "</#{lastMatch}>"
-                            @endBlock()
-                        else
-                            autoHtml = lastMatch
-                        
-                        continue
-                else if !!autoHtml and 0 <= line.indexOf "</#{autoHtml}>"
-                    @setBlock key
-                        .endBlock()
-                    autoHtml = no
-                    continue
-                else if @isBlock 'ahtml'
-                    @setBlock key
-                    continue
-                else if !!(matches = line.match /^\s*<!\-\-(.*?)\-\->\s*$/)
-                    @startBlock 'ahtml', key
-                        .endBlock()
-                    continue
-
-            # mathjax mode
-            if !!(matches = line.match /^(\s*)\$\$(\s*)$/)
-                if @isBlock 'math'
-                    @setBlock key
-                        .endBlock()
-                else
-                    @startBlock 'math', key
-
-                continue
-            else if @isBlock 'math'
-                @setBlock key
-                continue
-
-            # pre block
-            if !!(line.match /^ {4}/)
-                emptyCount = 0
-
-                if (@isBlock 'pre') or @isBlock 'list'
-                    @setBlock key
-                else
-                    @startBlock 'pre', key
-                
-                continue
-            else if @isBlock 'pre'
-                if line.match /^\s*$/
-                    if emptyCount > 0
-                        @startBlock 'normal', key
-                    else
-                        @setBlock key
-
-                    emptyCount += 1
-                else
-                    @startBlock 'normal', key
-                
-                continue
-
-            # html block is special too
-            if !!(matches = line.match new RegExp "^\\s*<(#{special})(\\s+[^>]*)?>", 'i')
-                tag = matches[1].toLowerCase()
-                if !(@isBlock 'html', tag) && !(@isBlock 'pre')
-                    @startBlock 'html', key, tag
-
-                continue
-            else if !!(matches = line.match new RegExp "</(#{special})>\\s*$", 'i')
-                tag = matches[1].toLowerCase()
-
-                if @isBlock 'html', tag
-                    @setBlock key
-                        .endBlock()
-                
-                continue
-            else if @isBlock 'html'
-                @setBlock key
-                continue
-
-            switch true
-                # foot note
-                when !!(matches = line.match /^\[\^((?:[^\]]|\\\]|\\\[)+?)\]:/)
-                    space = matches[0].length - 1
-                    @startBlock 'footnote', key, [space, matches[1]]
-
-                # definition
-                when !!(matches = line.match /^\s*\[((?:[^\]]|\\\]|\\\[)+?)\]:\s*(.+)$/)
-                    @definitions[matches[1]] = @cleanUrl matches[2]
-                    @startBlock 'definition', key
-                        .endBlock()
-
-                # block quote
-                when !!(matches = line.match /^(\s*)>/)
-                    if (@isBlock 'list') and matches[1].length > 0
-                        @setBlock key
-                    else if @isBlock 'quote'
-                        @setBlock key
-                    else
-                        @startBlock 'quote', key
-
-                # table
-                when !!(matches = line.match /^((?:(?:(?:\||\+)(?:[ :]*\-+[ :]*)(?:\||\+))|(?:(?:[ :]*\-+[ :]*)(?:\||\+)(?:[ :]*\-+[ :]*))|(?:(?:[ :]*\-+[ :]*)(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-+[ :]*)))+)$/)
-                    if @isBlock 'table'
-                        block[3][0].push block[3][2]
-                        block[3][2] += 1
-                        @setBlock key, block[3]
-                    else
-                        head = 0
-
-                        if not block? or block[0] != 'normal' or lines[block[2]].match /^\s*$/
-                            @startBlock 'table', key
-                        else
-                            head = 1
-                            @backBlock 1, 'table'
-
-                        if matches[1][0] == '|'
-                            matches[1] = matches[1].substring 1
-
-                            if matches[1][matches[1].length - 1] == '|'
-                                matches[1] = matches[1].substring 0, matches[1].length - 1
-
-                        rows = matches[1].split /\+|\|/
-                        aligns = []
-
-                        for row in rows
-                            align = 'none'
-
-                            if !!(matches = row.match /^\s*(:?)\-+(:?)\s*$/)
-                                if !!matches[1] && !!matches[2]
-                                    align = 'center'
-                                else if !!matches[1]
-                                    align = 'left'
-                                else if !!matches[2]
-                                    align = 'right'
-
-                            aligns.push align
-
-                        @setBlock key, [[head], aligns, head + 1]
-                        
-                
-                # single heading
-                when !!(matches = line.match /^(#+)(.*)$/)
-                    num = Math.min matches[1].length, 6
-                    @startBlock 'sh', key, num
-                        .endBlock()
-
-                # multi heading
-                when !!(matches = (line.match /^\s*((=|-){2,})\s*$/)) and (block? and block[0] == 'normal' and !lines[block[2]].match /^\s*$/)
-                    if @isBlock 'normal'
-                        @backBlock 1, 'mh', if matches[1][0] == '=' then 1 else 2
-                            .setBlock key
-                            .endBlock()
-                    else
-                        @startBlock 'normal', key
-
-                # hr
-                when !!(line.match /^[-\*]{3,}\s*$/)
-                    @startBlock 'hr', key
-                        .endBlock()
-
-                # normal
-                else
-                    if @isBlock 'list'
-                        if !!(matches = line.match /^(\s*)/)
-                            indent = matches[1].length > 0
-
-                            if emptyCount > 0 and not indent
-                                @startBlock 'normal', key
-                            else
-                                @setBlock key
-
-                            if indent
-                                emptyCount = 0
-                            else
-                                emptyCount += 1
-                        else if emptyCount == 0
-                            @setBlock key
-                        else
-                            @startBlock 'normal', key
-                    else if @isBlock 'footnote'
-                        matches = line.match /^(\s*)/
-                        if matches[1].length >= block[3][0]
-                            @setBlock key
-                        else
-                            @startBlock 'normal', key
-                    else if @isBlock 'table'
-                        if 0 <= line.indexOf '|'
-                            block[3][2] += 1
-                            @setBlock key, block[3]
-                        else
-                            @startBlock 'normal', key
-                    else if @isBlock 'quote'
-                        if not line.match /^(\s*)$/      # empty line
-                            @setBlock key
-                        else
-                            @startBlock 'normal', key
-                    else
-                        if not block? || block[0] != 'normal'
-                            @startBlock 'normal', key
-                        else
-                            @setBlock key
+            for name, parser of @parsers
+                if name isnt @current
+                    pass = parser block, key, line, state, lines
+                    
+                    break if not pass
+            
 
         @optimizeBlocks @blocks, lines
+
+
+    parseBlockList: (block, key, line, state) ->
+        # list
+        if !!(matches = line.match /^(\s*)((?:[0-9]+\.)|(?:[a-z]\.?)|\-|\+|\*)\s+/i)
+            space = matches[1].length
+            state.empty = 0
+
+            # opened
+            if @isBlock 'list'
+                @setBlock key, space
+            else
+                @startBlock 'list', key, space
+
+            return no
+        else if @isBlock 'list'
+            if (state.empty is 0) and !!(matches = line.match /^(\s+)/) and matches[1].length > block[3]
+                @setBlock key
+                return no
+
+        yes
+
+
+    parseBlockCode: (block, key, line) ->
+        if !!(matches = line.match /^(\s*)(~{3,}|`{3,})([^`~]*)$/i)
+            if @isBlock 'code'
+                isAfterList = block[3][2]
+
+                if isAfterList
+                    @combineBlock().setBlock(key)
+                else
+                    (@setBlock key).endBlock()
+            else
+                isAfterList = no
+
+                if @isBlock 'list'
+                    space = block[3]
+
+                    isAfterList = (space > 0 && matches[1].length >= space) || matches[1].length > space
+
+                @startBlock 'code', key, [matches[1], matches[3], isAfterList]
+
+            return no
+        else if @isBlock 'code'
+            @setBlock key
+            return no
+
+        yes
+
+
+    parseBlockShtml: (block, key, line, state) ->
+        if @html
+            if !state.html and !!(matches = line.match /^(\s*)!!!(\s*)$/)
+                if @isBlock 'shtml'
+                    @setBlock key
+                        .endBlock()
+                else
+                    @startBlock 'shtml', key
+
+                return no
+            else if @isBlock 'shtml'
+                @setBlock key
+                return no
+
+        yes
+
+
+    parseBlockAhtml: (block, key, line, state) ->
+        if @html
+            htmlTagRegExp = new RegExp "^\\s*<(#{@blockHtmlTags})(\\s+[^>]*)?>", 'i'
+            if matches = line.match htmlTagRegExp
+                if @isBlock 'ahtml'
+                    @setBlock key
+                    return no
+                else if matches[2] is undefined or matches[2] isnt '/'
+                    @startBlock 'ahtml', key
+                    htmlTagAllRegExp = new RegExp "\\s*<(#{@blockHtmlTags})(\\s+[^>]*)?>", 'ig'
+                    loop
+                        m = htmlTagAllRegExp.exec line
+                        break if !m
+                        lastMatch = m[1]
+
+                    if 0 <= line.indexOf "</#{lastMatch}>"
+                        @endBlock()
+                    else
+                        state.html = lastMatch
+
+                    return no
+            else if !!state.html and 0 <= line.indexOf "</#{state.html}>"
+                @setBlock key
+                    .endBlock()
+                state.html = no
+                return no
+            else if @isBlock 'ahtml'
+                @setBlock key
+                return no
+            else if !!(matches = line.match /^\s*<!\-\-(.*?)\-\->\s*$/)
+                @startBlock 'ahtml', key
+                    .endBlock()
+                return no
+
+        yes
+
+
+    parseBlockMath: (block, key, line) ->
+        if !!(matches = line.match /^(\s*)\$\$(\s*)$/)
+            if @isBlock 'math'
+                @setBlock key
+                    .endBlock()
+            else
+                @startBlock 'math', key
+
+            return no
+        else if @isBlock 'math'
+            @setBlock key
+            return no
+
+        yes
+
+
+    parseBlockPre: (block, key, line, state) ->
+        if !!(line.match /^ {4}/)
+            state.empty = 0
+
+            if (@isBlock 'pre') or @isBlock 'list'
+                @setBlock key
+            else
+                @startBlock 'pre', key
+                
+            return no
+        else if @isBlock 'pre'
+            if line.match /^\s*$/
+                if state.empty > 0
+                    @startBlock 'normal', key
+                else
+                    @setBlock key
+
+                state.empty += 1
+            else
+                @startBlock 'normal', key
+                
+            return no
+
+        yes
+
+
+    parseBlockHtml: (block, key, line, state) ->
+        if !!(matches = line.match new RegExp "^\\s*<(#{state.special})(\\s+[^>]*)?>", 'i')
+            tag = matches[1].toLowerCase()
+            if !(@isBlock 'html', tag) && !(@isBlock 'pre')
+                @startBlock 'html', key, tag
+
+            return no
+        else if !!(matches = line.match new RegExp "</(#{state.special})>\\s*$", 'i')
+            tag = matches[1].toLowerCase()
+
+            if @isBlock 'html', tag
+                @setBlock key
+                    .endBlock()
+
+            return no
+        else if @isBlock 'html'
+            @setBlock key
+            return no
+
+        yes
+
+    parseBlockFootnote: (block, key, line) ->
+        if !!(matches = line.match /^\[\^((?:[^\]]|\\\]|\\\[)+?)\]:/)
+            space = matches[0].length - 1
+            @startBlock 'footnote', key, [space, matches[1]]
+
+            return no
+        
+        yes
+
+
+    parseBlockDefinition: (block, key, line) ->
+        if !!(matches = line.match /^\s*\[((?:[^\]]|\\\]|\\\[)+?)\]:\s*(.+)$/)
+            @definitions[matches[1]] = @cleanUrl matches[2]
+            @startBlock 'definition', key
+                .endBlock()
+
+            return no
+
+        yes
+
+
+    parseBlockQuote: (block, key, line) ->
+        if !!(matches = line.match /^(\s*)>/)
+            if (@isBlock 'list') and matches[1].length > 0
+                @setBlock key
+            else if @isBlock 'quote'
+                @setBlock key
+            else
+                @startBlock 'quote', key
+
+            return no
+
+        yes
+
+
+    parseBlockTable: (block, key, line, state, lines) ->
+        if !!(matches = line.match /^((?:(?:(?:\||\+)(?:[ :]*\-+[ :]*)(?:\||\+))|(?:(?:[ :]*\-+[ :]*)(?:\||\+)(?:[ :]*\-+[ :]*))|(?:(?:[ :]*\-+[ :]*)(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-+[ :]*)))+)$/)
+            if @isBlock 'table'
+                block[3][0].push block[3][2]
+                block[3][2] += 1
+                @setBlock key, block[3]
+            else
+                head = 0
+
+                if not block? or block[0] != 'normal' or lines[block[2]].match /^\s*$/
+                    @startBlock 'table', key
+                else
+                    head = 1
+                    @backBlock 1, 'table'
+
+                if matches[1][0] == '|'
+                    matches[1] = matches[1].substring 1
+
+                    if matches[1][matches[1].length - 1] == '|'
+                        matches[1] = matches[1].substring 0, matches[1].length - 1
+
+                rows = matches[1].split /\+|\|/
+                aligns = []
+
+                for row in rows
+                    align = 'none'
+
+                    if !!(matches = row.match /^\s*(:?)\-+(:?)\s*$/)
+                        if !!matches[1] && !!matches[2]
+                            align = 'center'
+                        else if !!matches[1]
+                            align = 'left'
+                        else if !!matches[2]
+                            align = 'right'
+
+                    aligns.push align
+
+                @setBlock key, [[head], aligns, head + 1]
+
+            return no
+
+        yes
+
+
+    parseBlockSh: (block, key, line) ->
+        if !!(matches = line.match /^(#+)(.*)$/)
+            num = Math.min matches[1].length, 6
+            @startBlock 'sh', key, num
+                .endBlock()
+
+            return no
+        
+        yes
+
+
+    parseBlockMh: (block, key, line, state, lines) ->
+        if !!(matches = (line.match /^\s*((=|-){2,})\s*$/)) and (block? and block[0] == 'normal' and !lines[block[2]].match /^\s*$/)
+            if @isBlock 'normal'
+                @backBlock 1, 'mh', if matches[1][0] == '=' then 1 else 2
+                    .setBlock key
+                    .endBlock()
+            else
+                @startBlock 'normal', key
+
+            return no
+
+        yes
+
+
+    parseBlockHr: (block, key, line) ->
+        if !!(line.match /^[-\*]{3,}\s*$/)
+            @startBlock 'hr', key
+                .endBlock()
+            
+            return no
+
+        yes
+
+
+    parseBlockDefault: (block, key, line, state) ->
+        if @isBlock 'list'
+            if !!(matches = line.match /^(\s*)/)
+                indent = matches[1].length > 0
+
+                if state.empty > 0 and not indent
+                    @startBlock 'normal', key
+                else
+                    @setBlock key
+
+                if indent
+                    state.empty = 0
+                else
+                    state.empty += 1
+            else if state.empty == 0
+                @setBlock key
+            else
+                @startBlock 'normal', key
+        else if @isBlock 'footnote'
+            matches = line.match /^(\s*)/
+            if matches[1].length >= block[3][0]
+                @setBlock key
+            else
+                @startBlock 'normal', key
+        else if @isBlock 'table'
+            if 0 <= line.indexOf '|'
+                block[3][2] += 1
+                @setBlock key, block[3]
+            else
+                @startBlock 'normal', key
+        else if @isBlock 'quote'
+            if not line.match /^(\s*)$/      # empty line
+                @setBlock key
+            else
+                @startBlock 'normal', key
+        else
+            if not block? || block[0] != 'normal'
+                @startBlock 'normal', key
+            else
+                @setBlock key
+
+        yes
 
 
     optimizeBlocks: (_blocks, _lines) ->
@@ -780,7 +879,7 @@ class Parser
 
             rows = line.split '|'
                 .map (row) ->
-                    if row.match /^\s+$/ then '' else trim row
+                    if row.match /^\s+$/ then ' ' else trim row
             columns = {}
             last = -1
 
