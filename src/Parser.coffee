@@ -180,11 +180,6 @@ class Parser
 
             html += result
 
-        # inline mode for single normal block
-        if inline and blocks.length is 1 and blocks[0][0] is 'normal'
-            # remove p tag
-            html = html.replace /^\s*<p>(.*)<\/p>\s*$/m, '$1'
-
         html
 
 

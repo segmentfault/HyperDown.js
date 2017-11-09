@@ -196,9 +196,6 @@
         result = this.call('after' + ucfirst(method), result, value);
         html += result;
       }
-      if (inline && blocks.length === 1 && blocks[0][0] === 'normal') {
-        html = html.replace(/^\s*<p>(.*)<\/p>\s*$/m, '$1');
-      }
       return html;
     };
 
