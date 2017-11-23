@@ -169,6 +169,10 @@ class Parser
         blocks = @parseBlock text, lines
         html = ''
 
+        # inline mode for single normal block
+        if inline and blocks.length is 1 and blocks[0][0] is 'normal'
+            blocks[0][3] = yes
+
         for block in blocks
             [type, start, end, value] = block
             extract = lines.slice start, end + 1
@@ -901,7 +905,7 @@ class Parser
     parseHr: -> '<hr>'
 
 
-    parseNormal: (lines) ->
+    parseNormal: (lines, inline = no) ->
         lines = lines.map (line) =>
             @parseInline line
 
@@ -909,7 +913,7 @@ class Parser
         str = str.replace /(\n\s*){2,}/g, '</p><p>'
         str = str.replace /\n/g, '<br>'
 
-        if str.match /^\s*$/ then '' else "<p>#{str}</p>"
+        if str.match /^\s*$/ then '' else (if inline then str else "<p>#{str}</p>")
 
 
     parseFootnote: (lines, value) ->
