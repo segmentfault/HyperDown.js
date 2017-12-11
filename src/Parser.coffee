@@ -363,7 +363,7 @@ class Parser
 
     parseBlockList: (block, key, line, state) ->
         # list
-        if !!(matches = line.match /^(\s*)((?:[0-9]+\.)|(?:[a-z]\.?)|\-|\+|\*)\s+/i)
+        if !!(matches = line.match /^(\s*)((?:[0-9]+\.)|\-|\+|\*)\s+/i)
             space = matches[1].length
             state.empty = 0
 
@@ -775,7 +775,7 @@ class Parser
         rows = []
 
         for line, key in lines
-            if matches = line.match /^(\s*)((?:[0-9]+\.?)|(?:[a-z]\.?)|\-|\+|\*)(\s+)(.*)$/i
+            if matches = line.match /^(\s*)((?:[0-9]+\.?)|\-|\+|\*)(\s+)(.*)$/i
                 space = matches[1].length
                 type = if 0 <= '+-*'.indexOf matches[2] then 'ul' else 'ol'
                 minSpace = Math.min space, minSpace
