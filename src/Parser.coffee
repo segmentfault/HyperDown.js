@@ -119,6 +119,7 @@ class Parser
         text = @initText text
         html = @parse text
         html = @makeFootnotes html
+        html = @optimizeLines html
 
         @call 'makeHtml', html
 
@@ -168,7 +169,7 @@ class Parser
 
 
     # parse text
-    parse: (text, inline = no) ->
+    parse: (text, inline = no, offset = 0) ->
         lines = []  # array ref
         blocks = @parseBlock text, lines
         html = ''
@@ -183,7 +184,7 @@ class Parser
             method = 'parse' + ucfirst type
 
             extract = @call ('before' + ucfirst method), extract, value
-            result = @[method] extract, value
+            result = @[method] extract, value, start + offset, end + offset
             result = @call ('after' + ucfirst method), result, value
 
             html += result
@@ -219,7 +220,7 @@ class Parser
     markLine: (start, end = -1) ->
         if @line
             end = if end < 0 then start else end
-            return '<span class="line" data-start="' + start + '" data-end="' + end + '" />'
+            return '<span class="line" data-start="' + start + '" data-end="' + end + '" data-id="' + @uniqid + '" />'
 
         ''
 
@@ -230,8 +231,7 @@ class Parser
 
         if @line then lines.map (line) =>
             i += 1
-            start = start + i
-            (@markLine start) + line
+            (@markLine start + i) + line
         else lines
 
 
@@ -239,10 +239,10 @@ class Parser
     optimizeLines: (html) ->
         last = 0
 
-        if @line then html.replace /<span class="line" data\-start="([0-9]+)" data\-end="([0-9]+)" \/>/, (matches...) ->
-            current = parseInt matches[1]
-            if current != last
-                replace = '<span class="line" data-start="' + last + '" data-end="' + matches[2] + '" />'
+        regex = new RegExp "class=\"line\" data\\-start=\"([0-9]+)\" data\\-end=\"([0-9]+)\" (data\\-id=\"#{@uniqid}\")", 'g'
+        if @line then html.replace regex, (matches...) ->
+            if last != parseInt matches[1]
+                replace = 'class="line" data-start="' + last + '" data-end="' + matches[2] + '" ' + matches[3]
             else
                 replace = matches[0]
 
@@ -890,7 +890,6 @@ class Parser
                     head = no
                     body = yes
 
-                html += @markLine start + key
                 continue
 
             line = trim line
@@ -922,7 +921,12 @@ class Parser
             else if body
                 html += '<tbody>'
 
-            html += '<tr>' + @markLine start + key
+            html += '<tr'
+
+            if @line
+                html += ' class="line" data-start="' + (start + key) + '" data-end="' + (start + key) + '" data-id="' + @uniqid + '"'
+
+            html += '>'
 
             for key, column of columns
                 [num, text] = column
@@ -955,9 +959,21 @@ class Parser
         if @line then '<hr class="line" data-start="' + start + '" data-end="' + start + '">' else '<hr>'
 
 
-    parseNormal: (lines, inline = no) ->
+    parseNormal: (lines, inline = no, start) ->
+        from = start
+
+        key = 0
         lines = lines.map (line) =>
-            @parseInline line
+            line = @parseInline line
+
+            if !line.match /^\s*$/
+                end = start + key
+                line = (@markLine from, end) + line
+
+                from = end + 1
+
+            key += 1
+            line
 
         str = trim lines.join "\n"
         str = str.replace /(\n\s*){2,}/g, '</p><p>'
@@ -981,11 +997,11 @@ class Parser
     parseDefinition: -> ''
 
     
-    parseHtml: (lines, type) ->
+    parseHtml: (lines, type, start) ->
         lines = lines.map (line) =>
             @parseInline line, if @specialWhiteList[type]? then @specialWhiteList[type] else ''
 
-        lines.join "\n"
+        (@markLines lines, start).join "\n"
 
 
     cleanUrl: (url) ->
