@@ -101,7 +101,7 @@
       };
       this.hooks = {};
       this.html = false;
-      this.blockParsers = [['code', 10], ['shtml', 20], ['ahtml', 30], ['list', 40], ['math', 50], ['pre', 60], ['html', 70], ['footnote', 80], ['definition', 90], ['quote', 100], ['table', 110], ['sh', 120], ['mh', 130], ['hr', 140], ['default', 9999]];
+      this.blockParsers = [['code', 10], ['shtml', 20], ['pre', 30], ['ahtml', 40], ['list', 50], ['math', 60], ['html', 70], ['footnote', 80], ['definition', 90], ['quote', 100], ['table', 110], ['sh', 120], ['mh', 130], ['hr', 140], ['default', 9999]];
       this.parsers = {};
     }
 
@@ -186,6 +186,9 @@
       lines = [];
       blocks = this.parseBlock(text, lines);
       html = '';
+      if (inline && blocks.length === 1 && blocks[0][0] === 'normal') {
+        blocks[0][3] = true;
+      }
       for (j = 0, len = blocks.length; j < len; j++) {
         block = blocks[j];
         type = block[0], start = block[1], end = block[2], value = block[3];
@@ -461,7 +464,7 @@
 
     Parser.prototype.parseBlockList = function(block, key, line, state) {
       var matches, space;
-      if (!!(matches = line.match(/^(\s*)((?:[0-9]+\.)|(?:[a-z]\.?)|\-|\+|\*)\s+/i))) {
+      if (!!(matches = line.match(/^(\s*)((?:[0-9]+\.)|\-|\+|\*)\s+/i))) {
         space = matches[1].length;
         state.empty = 0;
         if (this.isBlock('list')) {
@@ -887,7 +890,7 @@
       rows = [];
       for (key = j = 0, len = lines.length; j < len; key = ++j) {
         line = lines[key];
-        if (matches = line.match(/^(\s*)((?:[0-9]+\.?)|(?:[a-z]\.?)|\-|\+|\*)(\s+)(.*)$/i)) {
+        if (matches = line.match(/^(\s*)((?:[0-9]+\.?)|\-|\+|\*)(\s+)(.*)$/i)) {
           space = matches[1].length;
           type = 0 <= '+-*'.indexOf(matches[2]) ? 'ul' : 'ol';
           minSpace = Math.min(space, minSpace);
@@ -1023,8 +1026,11 @@
       return '<hr>';
     };
 
-    Parser.prototype.parseNormal = function(lines) {
+    Parser.prototype.parseNormal = function(lines, inline) {
       var str;
+      if (inline == null) {
+        inline = false;
+      }
       lines = lines.map((function(_this) {
         return function(line) {
           return _this.parseInline(line);
@@ -1036,7 +1042,11 @@
       if (str.match(/^\s*$/)) {
         return '';
       } else {
-        return "<p>" + str + "</p>";
+        if (inline) {
+          return str;
+        } else {
+          return "<p>" + str + "</p>";
+        }
       }
     };
 

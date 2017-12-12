@@ -81,10 +81,10 @@ class Parser
         @blockParsers = [
             ['code', 10]
             ['shtml', 20]
-            ['ahtml', 30]
-            ['list', 40]
-            ['math', 50]
-            ['pre', 60]
+            ['pre', 30]
+            ['ahtml', 40]
+            ['list', 50]
+            ['math', 60]
             ['html', 70]
             ['footnote', 80]
             ['definition', 90]
@@ -172,6 +172,10 @@ class Parser
         lines = []  # array ref
         blocks = @parseBlock text, lines
         html = ''
+
+        # inline mode for single normal block
+        if inline and blocks.length is 1 and blocks[0][0] is 'normal'
+            blocks[0][3] = yes
 
         for block in blocks
             [type, start, end, value] = block
@@ -399,7 +403,7 @@ class Parser
 
     parseBlockList: (block, key, line, state) ->
         # list
-        if !!(matches = line.match /^(\s*)((?:[0-9]+\.)|(?:[a-z]\.?)|\-|\+|\*)\s+/i)
+        if !!(matches = line.match /^(\s*)((?:[0-9]+\.)|\-|\+|\*)\s+/i)
             space = matches[1].length
             state.empty = 0
 
@@ -816,7 +820,7 @@ class Parser
         rows = []
 
         for line, key in lines
-            if matches = line.match /^(\s*)((?:[0-9]+\.?)|(?:[a-z]\.?)|\-|\+|\*)(\s+)(.*)$/i
+            if matches = line.match /^(\s*)((?:[0-9]+\.?)|\-|\+|\*)(\s+)(.*)$/i
                 space = matches[1].length
                 type = if 0 <= '+-*'.indexOf matches[2] then 'ul' else 'ol'
                 minSpace = Math.min space, minSpace
@@ -951,7 +955,7 @@ class Parser
         if @line then '<hr class="line" data-start="' + start + '" data-end="' + start + '">' else '<hr>'
 
 
-    parseNormal: (lines) ->
+    parseNormal: (lines, inline = no) ->
         lines = lines.map (line) =>
             @parseInline line
 
@@ -959,7 +963,7 @@ class Parser
         str = str.replace /(\n\s*){2,}/g, '</p><p>'
         str = str.replace /\n/g, '<br>'
 
-        if str.match /^\s*$/ then '' else "<p>#{str}</p>"
+        if str.match /^\s*$/ then '' else (if inline then str else "<p>#{str}</p>")
 
 
     parseFootnote: (lines, value) ->
