@@ -76,6 +76,7 @@ class Parser
             table:  'table|tbody|thead|tfoot|tr|td|th'
         @hooks = {}
         @html = no
+        @line = no
 
         @blockParsers = [
             ['code', 10]
@@ -123,6 +124,9 @@ class Parser
 
 
     enableHtml: (@html = yes) ->
+
+
+    enableLine: (@line = yes) ->
 
     
     hook: (type, cb) ->
@@ -205,6 +209,42 @@ class Parser
 
         @holders = {} if clearHolders
         text
+
+
+    # mark line
+    markLine: (start, end = -1) ->
+        if @line
+            end = if end < 0 then start else end
+            return '<span class="line" data-start="' + start + '" data-end="' + end + '" />'
+
+        ''
+
+    
+    # mark lines
+    markLines: (lines, start) ->
+        i = -1
+
+        if @line then lines.map (line) =>
+            i += 1
+            start = start + i
+            (@markLine start) + line
+        else lines
+
+
+    # optimize lines
+    optimizeLines: (html) ->
+        last = 0
+
+        if @line then html.replace /<span class="line" data\-start="([0-9]+)" data\-end="([0-9]+)" \/>/, (matches...) ->
+            current = parseInt matches[1]
+            if current != last
+                replace = '<span class="line" data-start="' + last + '" data-end="' + matches[2] + '" />'
+            else
+                replace = matches[0]
+
+            last = 1 + parseInt matches[2]
+            replace
+        else html
 
 
     # parse inline
@@ -698,7 +738,7 @@ class Parser
         @call 'afterOptimizeBlocks', blocks, lines
 
 
-    parseCode: (lines, parts) ->
+    parseCode: (lines, parts, start) ->
         [blank, lang] = parts
         lang = trim lang
         count = blank.length
@@ -712,57 +752,62 @@ class Parser
                 lang = trim lang
                 rel = trim rel
         
+        isEmpty = yes
 
         lines = lines.slice 1, -1
             .map (line) ->
-                line.replace (new RegExp "/^[ ]{#{count}}/"), ''
+                line = line.replace (new RegExp "/^[ ]{#{count}}/"), ''
+                if isEmpty and !line.match /^\s*$/
+                    isEmpty = no
 
-        str = lines.join "\n"
+                htmlspecialchars line
 
-        if str.match /^\s*$/ then '' else '<pre><code' \
+        str = (@markLines lines, start + 1).join "\n"
+
+        if isEmpty then '' else '<pre><code' \
             + (if !!lang then " class=\"#{lang}\"" else '') \
             + (if !!rel then " rel=\"#{rel}\"" else '') + '>' \
-            + (htmlspecialchars str) + '</code></pre>'
+            + str + '</code></pre>'
 
     
-    parsePre: (lines) ->
+    parsePre: (lines, value, start) ->
         lines = lines.map (line) ->
             htmlspecialchars line.substring 4
-        str = lines.join "\n"
+        str = (@markLines lines, start).join "\n"
 
         if str.match /^\s*$/ then '' else '<pre><code>' + str + '</code></pre>'
 
 
-    parseAhtml: (lines) ->
-        trim lines.join "\n"
+    parseAhtml: (lines, value, start) ->
+        trim (@markLines lines, start).join "\n"
 
 
-    parseShtml: (lines) ->
-        trim (lines.slice 1, -1).join "\n"
+    parseShtml: (lines, value, start) ->
+        trim (@markLines (lines.slice 1, -1), start + 1).join "\n"
 
 
-    parseMath: (lines) ->
-        '<p>' + (htmlspecialchars lines.join "\n") + '</p>'
+    parseMath: (lines, value, start, end) ->
+        '<p>' + (@markLine start, end) + (htmlspecialchars lines.join "\n") + '</p>'
 
 
-    parseSh: (lines, num) ->
-        line = @parseInline trim lines[0], '# '
+    parseSh: (lines, num, start, end) ->
+        line = (@markLine start, end) + @parseInline trim lines[0], '# '
         if line.match /^\s*$/ then '' else "<h#{num}>#{line}</h#{num}>"
 
 
-    parseMh: (lines, num) ->
-        @parseSh lines, num
+    parseMh: (lines, num, start, end) ->
+        @parseSh lines, num, start, end
 
 
-    parseQuote: (lines) ->
+    parseQuote: (lines, value, start) ->
         lines = lines.map (line) ->
             line.replace /^\s*> ?/, ''
         str = lines.join "\n"
 
-        if str.match /^\s*$/ then '' else '<blockquote>' + (@parse str) + '</blockquote>'
+        if str.match /^\s*$/ then '' else '<blockquote>' + (@parse str, yes, start) + '</blockquote>'
 
 
-    parseList: (lines) ->
+    parseList: (lines, value, start) ->
         html = ''
         minSpace = 99999
         secondMinSpace = 99999
@@ -797,8 +842,9 @@ class Parser
 
         lastType = ''
         leftLines = []
+        leftStart = 0
 
-        for row in rows
+        for row, key in rows
             if row instanceof Array
                 [space, type, line, text] = row
 
@@ -806,7 +852,7 @@ class Parser
                     leftLines.push line.replace (new RegExp "^\\s{#{secondMinSpace}}"), ''
                 else
                     if leftLines.length > 0
-                        html += '<li>' + (@parse (leftLines.join "\n"), yes) + '</li>'
+                        html += '<li>' + (@parse (leftLines.join "\n"), yes, start + leftStart) + '</li>'
 
                     if lastType != type
                         if !!lastType
@@ -814,18 +860,19 @@ class Parser
 
                         html += "<#{type}>"
 
+                    leftStart = key
                     leftLines = [text]
                     lastType = type
             else
                 leftLines.push row.replace (new RegExp "^\\s{#{secondMinSpace}}"), ''
 
         if leftLines.length > 0
-            html += '<li>' + (@parse (leftLines.join "\n"), yes) + "</li></#{lastType}>"
+            html += '<li>' + (@parse (leftLines.join "\n"), yes, start + leftStart) + "</li></#{lastType}>"
 
         html
 
 
-    parseTable: (lines, value) ->
+    parseTable: (lines, value, start) ->
         [ignores, aligns] = value
         head = ignores.length > 0 and (ignores.reduce (prev, curr) -> curr + prev) > 0
 
@@ -838,6 +885,8 @@ class Parser
                 if head and output
                     head = no
                     body = yes
+
+                html += @markLine start + key
                 continue
 
             line = trim line
@@ -869,7 +918,7 @@ class Parser
             else if body
                 html += '<tbody>'
 
-            html += '<tr>'
+            html += '<tr>' + @markLine start + key
 
             for key, column of columns
                 [num, text] = column
@@ -898,7 +947,8 @@ class Parser
 
 
 
-    parseHr: -> '<hr>'
+    parseHr: (lines, value, start) ->
+        if @line then '<hr class="line" data-start="' + start + '" data-end="' + start + '">' else '<hr>'
 
 
     parseNormal: (lines) ->
