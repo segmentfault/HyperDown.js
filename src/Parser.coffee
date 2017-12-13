@@ -21,7 +21,7 @@ class Parser
                     str = str_replace val, replace, str
         else
             search = preg_quote search
-            str = str.replace (new RegExp search, 'g'), replace
+            str = str.replace (new RegExp search, 'g'), replace.replace /\$/g, '$$$$'
 
         str
 

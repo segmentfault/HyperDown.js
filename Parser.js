@@ -32,7 +32,7 @@
         }
       } else {
         search = preg_quote(search);
-        str = str.replace(new RegExp(search, 'g'), replace);
+        str = str.replace(new RegExp(search, 'g'), replace.replace(/\$/g, '$$$$'));
       }
       return str;
     };
