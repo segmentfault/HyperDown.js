@@ -960,17 +960,12 @@ class Parser
 
 
     parseNormal: (lines, inline = no, start) ->
-        from = start
-
         key = 0
         lines = lines.map (line) =>
             line = @parseInline line
 
             if !line.match /^\s*$/
-                end = start + key
-                line = (@markLine from, end) + line
-
-                from = end + 1
+                line = (@markLine start + key) + line
 
             key += 1
             line
