@@ -249,7 +249,7 @@
       }
       if (this.line) {
         end = end < 0 ? start : end;
-        return '<span class="line" data-start="' + start + '" data-end="' + end + '" data-id="' + this.uniqid + '" />';
+        return '<span class="line" data-start="' + start + '" data-end="' + end + '" data-id="' + this.uniqid + '"></span>';
       }
       return '';
     };
@@ -278,7 +278,7 @@
           var matches, replace;
           matches = 1 <= arguments.length ? slice.call(arguments, 0) : [];
           if (last !== parseInt(matches[1])) {
-            replace = 'class="line" data-start="' + last + '" data-end="' + matches[2] + '" ' + matches[3];
+            replace = 'class="line" data-start="' + last + '" data-start-original="' + matches[1] + '" data-end="' + matches[2] + '" ' + matches[3];
           } else {
             replace = matches[0];
           }

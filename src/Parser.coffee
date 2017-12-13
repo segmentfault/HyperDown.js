@@ -220,7 +220,7 @@ class Parser
     markLine: (start, end = -1) ->
         if @line
             end = if end < 0 then start else end
-            return '<span class="line" data-start="' + start + '" data-end="' + end + '" data-id="' + @uniqid + '" />'
+            return '<span class="line" data-start="' + start + '" data-end="' + end + '" data-id="' + @uniqid + '"></span>'
 
         ''
 
@@ -242,7 +242,7 @@ class Parser
         regex = new RegExp "class=\"line\" data\\-start=\"([0-9]+)\" data\\-end=\"([0-9]+)\" (data\\-id=\"#{@uniqid}\")", 'g'
         if @line then html.replace regex, (matches...) ->
             if last != parseInt matches[1]
-                replace = 'class="line" data-start="' + last + '" data-end="' + matches[2] + '" ' + matches[3]
+                replace = 'class="line" data-start="' + last + '" data-start-original="' + matches[1] + '" data-end="' + matches[2] + '" ' + matches[3]
             else
                 replace = matches[0]
 
