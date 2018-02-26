@@ -903,7 +903,7 @@ class Parser
 
             rows = line.split '|'
                 .map (row) ->
-                    if row.match /^\s+$/ then ' ' else trim row
+                    if row.match /^\s*$/ then ' ' else trim row
             columns = {}
             last = -1
 
