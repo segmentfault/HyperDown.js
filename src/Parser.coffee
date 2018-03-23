@@ -718,7 +718,7 @@ class Parser
             [type, from, to] = block
 
             if 'pre' == type
-                isEmpty = lines.reduce (result, line) ->
+                isEmpty = (lines.slice block[1], block[2] + 1).reduce (result, line) ->
                     (line.match /^\s*$/) and result
                 , yes
 
