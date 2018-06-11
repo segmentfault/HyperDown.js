@@ -161,7 +161,7 @@
     };
 
     Parser.prototype.initText = function(text) {
-      return text.replace(/\t/g, '    ').replace(/\r/g, '');
+      return text.replace(/\t/g, '    ').replace(/\r/g, '').replace(/(\u000A|\u000D|\u2028|\u2029)/g, "\n");
     };
 
     Parser.prototype.makeFootnotes = function(html) {
