@@ -1001,9 +1001,12 @@ class Parser
 
 
     cleanUrl: (url) ->
-        if !!(matches = url.match /^\s*((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#!@\?\+=~\|\,&\(\)]+)/i)
+        regexUrl = new RegExp "^\\s*((http|https|ftp|mailto):[#{pL}_a-z0-9-\\./%#!@\\?\\+=~\\|\\,&\\(\\)]+)", 'i'
+        regexWord = new RegExp "^\\s*([#{pL}_a-z0-9-\\./%#!@\\?\\+=~\\|\\,&]+)", 'i'
+
+        if !!(matches = url.match regexUrl)
             matches[1]
-        if !!(matches = url.match /^\s*([x80-xff_a-z0-9-\.\/%#!@\?\+=~\|\,&]+)/i)
+        else if !!(matches = url.match regexWord)
             matches[1]
         else
             '#'
