@@ -1001,8 +1001,8 @@ class Parser
 
 
     cleanUrl: (url) ->
-        regexUrl = new RegExp "^\\s*((http|https|ftp|mailto):[#{pL}_a-z0-9-\\./%#!@\\?\\+=~\\|\\,&\\(\\)]+)", 'i'
-        regexWord = new RegExp "^\\s*([#{pL}_a-z0-9-\\./%#!@\\?\\+=~\\|\\,&]+)", 'i'
+        regexUrl = new RegExp "^\\s*((http|https|ftp|mailto):[#{pL}_a-z0-9-\\.\\*/%#!@\\?\\+=~\\|\\,&\\(\\)]+)", 'i'
+        regexWord = new RegExp "^\\s*([#{pL}_a-z0-9-\\.\\*/%#!@\\?\\+=~\\|\\,&]+)", 'i'
 
         if !!(matches = url.match regexUrl)
             matches[1]
