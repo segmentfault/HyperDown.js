@@ -102,7 +102,7 @@
       this.hooks = {};
       this.html = false;
       this.line = false;
-      this.blockParsers = [['code', 10], ['shtml', 20], ['pre', 30], ['ahtml', 40], ['list', 50], ['math', 60], ['html', 70], ['footnote', 80], ['definition', 90], ['quote', 100], ['table', 110], ['sh', 120], ['mh', 130], ['hr', 140], ['default', 9999]];
+      this.blockParsers = [['code', 10], ['shtml', 20], ['pre', 30], ['ahtml', 40], ['hr', 50], ['list', 60], ['math', 70], ['html', 80], ['footnote', 90], ['definition', 100], ['quote', 110], ['table', 120], ['sh', 130], ['mh', 140], ['default', 9999]];
       this.parsers = {};
     }
 

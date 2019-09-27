@@ -30,10 +30,10 @@ describe('HyperDown.js', function() {
 
     describe('list', function() {
         it('ul', function() {
-            assert.equal('<ul><li><p>list</p></li></ul>', parser.makeHtml('\n\n - list'));
+            assert.equal('<ul><li>list</li></ul>', parser.makeHtml('\n\n - list'));
         });
         it('ol', function() {
-            assert.equal('<ol><li><p>list</p></li></ol>', parser.makeHtml('1. list'));
+            assert.equal('<ol><li>list</li></ol>', parser.makeHtml('1. list'));
         });
     });
 
@@ -75,7 +75,7 @@ describe('HyperDown.js', function() {
 
     describe('quote', function() {
         it('> ', function() {
-            assert.equal('<blockquote><p>test</p></blockquote>', parser.makeHtml('> test'));
+            assert.equal('<blockquote>test</blockquote>', parser.makeHtml('> test'));
         });
     });
 
@@ -136,13 +136,17 @@ describe('HyperDown.js', function() {
         });
         it('list + code', function() {
             var codeInList = "1. 1111\n 1111\n 1111\`operator new\` 在分配内存失败的情况下会调用 \`new_handler\` 尝试让系统释放点内存，然后再次尝试申请内存。如果这时系统中内存确实紧张，即使调用。";
-            assert.equal('<ol><li><p>1111<br> 1111</p></li></ol><p>1111<code>operator new</code> 在分配内存失败的情况下会调用 <code>new_handler</code> 尝试让系统释放点内存，然后再次尝试申请内存。如果这时系统中内存确实紧张，即使调用。</p>', parser.makeHtml(codeInList));
+            assert.equal('<ol><li>1111<br> 1111</li></ol><p>1111<code>operator new</code> 在分配内存失败的情况下会调用 <code>new_handler</code> 尝试让系统释放点内存，然后再次尝试申请内存。如果这时系统中内存确实紧张，即使调用。</p>', parser.makeHtml(codeInList));
         });
     });
 
     describe('bugfix', function() {
         it('escape', function () {
             assert.equal('<p>[系统盘]:\\Documents and Settings\\[用户名]\\Cookies</p>', parser.makeHtml('\\[系统盘]:\\\\Documents and Settings\\\\[用户名]\\\\Cookies'));
+        });
+
+        it('hr', function () {
+            assert.equal('<hr>', parser.makeHtml('* * *'));
         });
 
         it('table', function () {
