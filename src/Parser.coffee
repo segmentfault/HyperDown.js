@@ -666,7 +666,7 @@ class Parser
 
 
     parseBlockHr: (block, key, line) ->
-        if !!(line.match /^[-\*]{3,}\s*$/)
+        if !!(line.match /^((- *){3,}|(\* *){3,})\s*$/)
             @startBlock 'hr', key
                 .endBlock()
             
