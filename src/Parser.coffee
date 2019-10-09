@@ -83,7 +83,7 @@ class Parser
             ['shtml', 20]
             ['pre', 30]
             ['ahtml', 40]
-            ['hr', 50]
+            ['shr', 50]
             ['list', 60]
             ['math', 70]
             ['html', 80]
@@ -93,6 +93,7 @@ class Parser
             ['table', 120]
             ['sh', 130]
             ['mh', 140]
+            ['dhr', 150]
             ['default', 9999]
         ]
         @parsers = {}
@@ -665,8 +666,18 @@ class Parser
         yes
 
 
-    parseBlockHr: (block, key, line) ->
-        if !!(line.match /^((- *){3,}|(\* *){3,})\s*$/)
+    parseBlockShr: (block, key, line) ->
+        if !!(line.match /^(\* *){3,}\s*$/)
+            @startBlock 'hr', key
+                .endBlock()
+            
+            return no
+
+        yes
+
+
+    parseBlockDhr: (block, key, line) ->
+        if !!(line.match /^(- *){3,}\s*$/)
             @startBlock 'hr', key
                 .endBlock()
             

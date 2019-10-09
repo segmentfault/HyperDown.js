@@ -14,6 +14,10 @@ describe('HyperDown.js', function() {
         it('heading ======', function() {
             assert.equal('<h1>heading</h1>', parser.makeHtml('heading\n======'));
         });
+
+        it('heading ------', function() {
+            assert.equal('<h2>heading</h2>', parser.makeHtml('heading\n------'));
+        });
     });
 
     describe('bold', function() {
