@@ -341,7 +341,7 @@
           if (_this.html || (('|' + _this.commonWhiteList + '|' + whiteList + '|').indexOf('|' + matches[2].toLowerCase() + '|')) >= 0) {
             return _this.makeHolder(matches[0]);
           } else {
-            return htmlspecialchars(matches[0]);
+            return _this.makeHolder(htmlspecialchars(matches[0]));
           }
         };
       })(this));

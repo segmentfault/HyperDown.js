@@ -283,7 +283,7 @@ class Parser
             if @html or (('|' + @commonWhiteList + '|' + whiteList + '|').indexOf '|' + matches[2].toLowerCase() + '|') >= 0
                 @makeHolder matches[0]
             else
-                htmlspecialchars matches[0]
+                @makeHolder htmlspecialchars matches[0]
 
         if @html
             text = text.replace /<!\-\-(.*?)\-\->/g, (matches...) =>
