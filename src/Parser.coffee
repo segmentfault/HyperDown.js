@@ -256,7 +256,8 @@ class Parser
     # parse inline
     parseInline: (text, whiteList = '', clearHolders = yes, enableAutoLink = yes) ->
         text = @call 'beforeParseInline', text
-
+        text = String.raw''+text+''
+        text = text.replaceAll /\\{1,}/g,(str) => str.length%2 > 0 && ''+str+'\\' || str 
         # code
         text = text.replace /(^|[^\\])(`+)(.+?)\2/mg, (matches...) =>
             matches[1] + @makeHolder '<code>' + (htmlspecialchars matches[3]) + '</code>'

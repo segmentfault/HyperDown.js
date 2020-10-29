@@ -302,6 +302,12 @@
         enableAutoLink = true;
       }
       text = this.call('beforeParseInline', text);
+      text = String.raw`` + text + '';
+      text = text.replaceAll(/\\{1,}/g, (function(_this) {
+        return function(str) {
+          return str.length % 2 > 0 && '' + str + '\\' || str;
+        };
+      })(this));
       text = text.replace(/(^|[^\\])(`+)(.+?)\2/mg, (function(_this) {
         return function() {
           var matches;
