@@ -303,7 +303,7 @@
       }
       parseBackSlash = (function(_this) {
         return function(text) {
-          return text.replaceAll(/\\{1,}/g, function(str) {
+          return text.replace(/\\{1,}/g, function(str) {
             return str.length % 2 > 0 && '' + str + '\\' || str;
           });
         };

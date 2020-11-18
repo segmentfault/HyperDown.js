@@ -255,7 +255,7 @@ class Parser
     # parse inline
     parseInline: (text, whiteList = '', clearHolders = yes, enableAutoLink = yes) ->
 
-        parseBackSlash =  (text) => text.replaceAll /\\{1,}/g,(str) => str.length%2 > 0 && ''+str+'\\' || str
+        parseBackSlash =  (text) => text.replace /\\{1,}/g,(str) => str.length%2 > 0 && ''+str+'\\' || str
         text = @call 'beforeParseInline', text
         text = String.raw''+text+''
         text = text.split /(`.+?`)/g 
