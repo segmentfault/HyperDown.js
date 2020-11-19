@@ -533,16 +533,7 @@
 
     Parser.prototype.parseBlockList = function(block, key, line, state) {
       var matches, space;
-      if (!!(matches = line.match(/^(\s*)((?:[0-9]+\.)|\-|\+|\*)\s+/i))) {
-        space = matches[1].length;
-        state.empty = 0;
-        if (this.isBlock('list')) {
-          this.setBlock(key, space);
-        } else {
-          this.startBlock('list', key, space);
-        }
-        return false;
-      } else if ((this.isBlock('list')) && !line.match(/^\s*\[((?:[^\]]|\\\]|\\\[)+?)\]:\s*(.+)$/)) {
+      if ((this.isBlock('list')) && !line.match(/^\s*\[((?:[^\]]|\\\]|\\\[)+?)\]:\s*(.+)$/)) {
         if ((state.empty <= 1) && !!(matches = line.match(/^(\s+)/)) && matches[1].length > block[3]) {
           state.empty = 0;
           this.setBlock(key);
@@ -552,6 +543,16 @@
           this.setBlock(key);
           return false;
         }
+      }
+      if (!!(matches = line.match(/^(\s*)((?:[0-9]+\.)|\-|\+|\*)\s+/i))) {
+        space = matches[1].length;
+        state.empty = 0;
+        if (this.isBlock('list')) {
+          this.setBlock(key, space);
+        } else {
+          this.startBlock('list', key, space);
+        }
+        return false;
       }
       return true;
     };

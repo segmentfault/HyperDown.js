@@ -410,7 +410,17 @@ class Parser
 
 
     parseBlockList: (block, key, line, state) ->
-        # list
+        # list 
+        if (@isBlock 'list') and not line.match /^\s*\[((?:[^\]]|\\\]|\\\[)+?)\]:\s*(.+)$/
+            if (state.empty <= 1) and !!(matches = line.match /^(\s+)/) and matches[1].length > block[3]
+                state.empty = 0
+                @setBlock key
+                return no
+            else if (line.match /^\s*$/) and state.empty is 0
+                state.empty += 1
+                @setBlock key
+                return no
+
         if !!(matches = line.match /^(\s*)((?:[0-9]+\.)|\-|\+|\*)\s+/i)
             space = matches[1].length
             state.empty = 0
@@ -422,15 +432,6 @@ class Parser
                 @startBlock 'list', key, space
 
             return no
-        else if (@isBlock 'list') and not line.match /^\s*\[((?:[^\]]|\\\]|\\\[)+?)\]:\s*(.+)$/
-            if (state.empty <= 1) and !!(matches = line.match /^(\s+)/) and matches[1].length > block[3]
-                state.empty = 0
-                @setBlock key
-                return no
-            else if (line.match /^\s*$/) and state.empty is 0
-                state.empty += 1
-                @setBlock key
-                return no
 
         yes
 
