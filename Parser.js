@@ -301,6 +301,7 @@
       if (enableAutoLink == null) {
         enableAutoLink = true;
       }
+      text = this.call('beforeParseInline', text);
       text = text.replace(/(^|[^\\])(`+)(.+?)\2/mg, (function(_this) {
         return function() {
           var matches;
