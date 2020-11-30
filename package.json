@@ -7,7 +7,7 @@
   },
   "license": "BSD-4-Clause",
   "author": "SegmentFault",
-  "version": "2.4.7",
+  "version": "2.4.8",
   "scripts": {
     "test": "mocha",
     "build": "cake build"
@@ -17,6 +17,8 @@
     "url": "https://github.com/SegmentFault/HyperDown.js/issues"
   },
   "homepage": "https://github.com/SegmentFault/HyperDown.js#readme",
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
+    "mocha": "^8.2.1"
   }
 }

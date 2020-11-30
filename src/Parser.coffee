@@ -254,15 +254,6 @@ class Parser
 
     # parse inline
     parseInline: (text, whiteList = '', clearHolders = yes, enableAutoLink = yes) ->
-
-        parseBackSlash =  (text) => text.replace /\\{1,}/g,(str) => str.length%2 > 0 && ''+str+'\\' || str
-        text = @call 'beforeParseInline', text
-        text = String.raw''+text+''
-        text = text.split /(`.+?`)/g 
-                .reduce (str,cur) ->  
-                    str = str || ''
-                    cur = cur || ''
-                    ((str.match /`.+?`/g) && str||parseBackSlash str ) + ((cur.match /`.+?`/g) && cur || parseBackSlash cur )
         # code
         text = text.replace /(^|[^\\])(`+)(.+?)\2/mg, (matches...) =>
             matches[1] + @makeHolder '<code>' + (htmlspecialchars matches[3]) + '</code>'
@@ -273,9 +264,10 @@ class Parser
 
         # escape
         text = text.replace /\\(.)/g, (matches...) =>
+            prefix = if matches[1].match /^[-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]$/ then '' else '\\'
             escaped = htmlspecialchars matches[1]
             escaped = escaped.replace /\$/g, '&dollar;'
-            @makeHolder escaped
+            @makeHolder prefix + escaped
         
         # link
         text = text.replace /<(https?:\/\/.+)>/ig, (matches...) =>
