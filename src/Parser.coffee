@@ -335,7 +335,7 @@ class Parser
 
         # autolink url
         if  enableAutoLink
-            regex = new RegExp "(^|[^\"])((https?):[#{pL}_0-9-\\./%#!@\\?\\[\\]\\+=~\\|\\,&\\(\\)]+)($|[^\"])", 'ig'
+            regex = new RegExp "(^|[^\"])((https?):[#{pL}_0-9-\\./%#!:@\\?\\[\\]\\+=~\\|\\,&\\(\\)]+)($|[^\"])", 'ig'
             text = text.replace regex, (matches...) =>
                 link = @call 'parseLink', matches[2]
                 "#{matches[1]}<a href=\"#{matches[2]}\">#{link}</a>#{matches[4]}"
@@ -1013,7 +1013,7 @@ class Parser
 
 
     cleanUrl: (url) ->
-        regexUrl = new RegExp "^\\s*((http|https|ftp|mailto):[#{pL}_a-z0-9-:\\.\\*/%#;!@\\?\\[\\]\\+=~\\|\\,&\\(\\)]+)", 'i'
+        regexUrl = new RegExp "^\\s*((http|https|ftp|mailto):[#{pL}_a-z0-9-:\\.\\*/%#;:!@\\?\\[\\]\\+=~\\|\\,&\\(\\)]+)", 'i'
         regexWord = new RegExp "^\\s*([#{pL}_a-z0-9-:\\.\\*/%#!@\\?\\+=~\\|\\,&]+)", 'i'
 
         if !!(matches = url.match regexUrl)
