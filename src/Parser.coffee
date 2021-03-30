@@ -406,7 +406,7 @@ class Parser
     parseBlockList: (block, key, line, state) ->
         # list 
         if (@isBlock 'list') and not line.match /^\s*\[((?:[^\]]|\\\]|\\\[)+?)\]:\s*(.+)$/
-            if (state.empty <= 1) and !!(matches = line.match /^(\s+)/) and matches[1].length > block[3]
+            if (state.empty <= 1) and !!(matches = line.match /^(\s*)\S+/) and matches[1].length >= (block[3] + state.empty)
                 state.empty = 0
                 @setBlock key
                 return no
@@ -972,7 +972,7 @@ class Parser
         if @line then '<hr class="line" data-start="' + start + '" data-end="' + start + '">' else '<hr>'
 
 
-    parseNormal: (lines, inline = no, start) ->
+    parseNormal: (lines, inline, start) ->
         key = 0
         lines = lines.map (line) =>
             line = @parseInline line
@@ -984,7 +984,9 @@ class Parser
             line
 
         str = trim lines.join "\n"
-        str = str.replace /(\n\s*){2,}/g, '</p><p>'
+        str = str.replace /(\n\s*){2,}/g, () => 
+                inline = false
+                '</p><p>'
         str = str.replace /\n/g, '<br>'
 
         if str.match /^\s*$/ then '' else (if inline then str else "<p>#{str}</p>")

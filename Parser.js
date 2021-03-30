@@ -522,7 +522,7 @@
     Parser.prototype.parseBlockList = function(block, key, line, state) {
       var matches, space;
       if ((this.isBlock('list')) && !line.match(/^\s*\[((?:[^\]]|\\\]|\\\[)+?)\]:\s*(.+)$/)) {
-        if ((state.empty <= 1) && !!(matches = line.match(/^(\s+)/)) && matches[1].length > block[3]) {
+        if ((state.empty <= 1) && !!(matches = line.match(/^(\s*)\S+/)) && matches[1].length >= (block[3] + state.empty)) {
           state.empty = 0;
           this.setBlock(key);
           return false;
@@ -1109,9 +1109,6 @@
 
     Parser.prototype.parseNormal = function(lines, inline, start) {
       var key, str;
-      if (inline == null) {
-        inline = false;
-      }
       key = 0;
       lines = lines.map((function(_this) {
         return function(line) {
@@ -1124,7 +1121,12 @@
         };
       })(this));
       str = trim(lines.join("\n"));
-      str = str.replace(/(\n\s*){2,}/g, '</p><p>');
+      str = str.replace(/(\n\s*){2,}/g, (function(_this) {
+        return function() {
+          inline = false;
+          return '</p><p>';
+        };
+      })(this));
       str = str.replace(/\n/g, '<br>');
       if (str.match(/^\s*$/)) {
         return '';
