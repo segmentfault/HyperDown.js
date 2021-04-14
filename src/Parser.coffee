@@ -403,7 +403,10 @@ class Parser
     parseBlockList: (block, key, line, state) ->
         # list 
         if (@isBlock 'list') and not line.match /^\s*\[((?:[^\]]|\\\]|\\\[)+?)\]:\s*(.+)$/
-            if (state.empty <= 1) and !!(matches = line.match /^(\s*)\S+/) and matches[1].length >= (block[3][0] + state.empty)
+            if !!(line.match /^(\s*)(~{3,}|`{3,})([^`~]*)$/i)
+                # ignore code
+                return yes
+            else if (state.empty <= 1) and !!(matches = line.match /^(\s*)\S+/) and matches[1].length >= (block[3][0] + state.empty)
                 state.empty = 0
                 @setBlock key
                 return no
@@ -431,7 +434,7 @@ class Parser
         yes
 
 
-    parseBlockCode: (block, key, line) ->
+    parseBlockCode: (block, key, line, state) ->
         if !!(matches = line.match /^(\s*)(~{3,}|`{3,})([^`~]*)$/i)
             if @isBlock 'code'
                 isAfterList = block[3][2]
@@ -444,9 +447,9 @@ class Parser
                 isAfterList = no
 
                 if @isBlock 'list'
-                    space = block[3]
+                    space = block[3][0]
 
-                    isAfterList = (space > 0 && matches[1].length >= space) || matches[1].length > space
+                    isAfterList = matches[1].length >= space + state.empty
 
                 @startBlock 'code', key, [matches[1], matches[3], isAfterList]
 
