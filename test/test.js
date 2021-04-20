@@ -139,8 +139,8 @@ describe('HyperDown.js', function() {
             assert.equal('<pre><code>a</code></pre><hr>', parser.makeHtml('```\na\n```\n---'));
         });
         it('list + code', function() {
-            var codeInList = "1. 1111\n 1111\n\n 1111\`operator new\` 在分配内存失败的情况下会调用 \`new_handler\` 尝试让系统释放点内存，然后再次尝试申请内存。如果这时系统中内存确实紧张，即使调用。";
-            assert.equal('<ol><li>1111<br>1111</p><p>1111<code>operator new</code> 在分配内存失败的情况下会调用 <code>new_handler</code> 尝试让系统释放点内存，然后再次尝试申请内存。如果这时系统中内存确实紧张，即使调用。</li></ol>', parser.makeHtml(codeInList));
+            var codeInList = "1. 1111\n   1111\n\n 1111\`operator new\` 在分配内存失败的情况下会调用 \`new_handler\` 尝试让系统释放点内存，然后再次尝试申请内存。如果这时系统中内存确实紧张，即使调用。";
+            assert.equal('<ol><li><p>1111<br>1111</p><p>1111<code>operator new</code> 在分配内存失败的情况下会调用 <code>new_handler</code> 尝试让系统释放点内存，然后再次尝试申请内存。如果这时系统中内存确实紧张，即使调用。</p></li></ol>', parser.makeHtml(codeInList));
         });
     });
 
