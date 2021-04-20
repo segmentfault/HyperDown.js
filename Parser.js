@@ -516,7 +516,7 @@
     };
 
     Parser.prototype.parseBlockList = function(block, key, line, state) {
-      var matches, space, type;
+      var matches, space, tab, type;
       if ((this.isBlock('list')) && !line.match(/^\s*\[((?:[^\]]|\\\]|\\\[)+?)\]:\s*(.+)$/)) {
         if (!!(line.match(/^(\s*)(~{3,}|`{3,})([^`~]*)$/i))) {
           return true;
@@ -532,16 +532,17 @@
       }
       if (!!(matches = line.match(/^(\s*)((?:[0-9]+\.)|\-|\+|\*)\s+/i))) {
         space = matches[1].length;
+        tab = matches[0].length - space;
         state.empty = 0;
         type = 0 <= '+-*'.indexOf(matches[2]) ? 'ul' : 'ol';
         if (this.isBlock('list')) {
           if (space < block[3][0] || (space === block[3][0] && type !== block[3][1])) {
-            this.startBlock('list', key, [space, type]);
+            this.startBlock('list', key, [space, type, tab]);
           } else {
             this.setBlock(key);
           }
         } else {
-          this.startBlock('list', key, [space, type]);
+          this.startBlock('list', key, [space, type, tab]);
         }
         return false;
       }
@@ -955,9 +956,9 @@
     };
 
     Parser.prototype.parseList = function(lines, value, start) {
-      var html, j, key, l, last, len, len1, line, matches, row, rows, space, suffix, type;
+      var html, j, key, l, last, len, len1, line, matches, row, rows, space, suffix, tab, type;
       html = '';
-      space = value[0], type = value[1];
+      space = value[0], type = value[1], tab = value[2];
       rows = [];
       suffix = '';
       last = 0;
@@ -973,7 +974,7 @@
           rows.push([matches[4]]);
           last = rows.length - 1;
         } else {
-          rows[last].push(line.replace(new RegExp("^\\s{" + space + "}"), ''));
+          rows[last].push(line.replace(new RegExp("^\\s{" + (tab + space) + "}"), ''));
         }
       }
       for (l = 0, len1 = rows.length; l < len1; l++) {

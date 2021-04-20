@@ -417,17 +417,18 @@ class Parser
 
         if !!(matches = line.match /^(\s*)((?:[0-9]+\.)|\-|\+|\*)\s+/i)
             space = matches[1].length
+            tab = matches[0].length - space
             state.empty = 0
             type = if 0 <= '+-*'.indexOf matches[2] then 'ul' else 'ol'
 
             # opened
             if @isBlock 'list'
                 if space < block[3][0] or (space == block[3][0] and type != block[3][1])
-                    @startBlock 'list', key, [space, type]
+                    @startBlock 'list', key, [space, type, tab]
                 else
                     @setBlock key
             else
-                @startBlock 'list', key, [space, type]
+                @startBlock 'list', key, [space, type, tab]
 
             return no
 
@@ -832,7 +833,7 @@ class Parser
 
     parseList: (lines, value, start) ->
         html = ''
-        [space, type] = value
+        [space, type, tab] = value
         rows = []
         suffix = ''
         last = 0
@@ -847,7 +848,7 @@ class Parser
                 rows.push [matches[4]]
                 last = rows.length - 1
             else
-                rows[last].push line.replace (new RegExp "^\\s{#{space}}"), ''
+                rows[last].push line.replace (new RegExp "^\\s{#{tab + space}}"), ''
 
         for row in rows
             html += '<li>' + (@parse (row.join "\n"), yes, start) + '</li>'
