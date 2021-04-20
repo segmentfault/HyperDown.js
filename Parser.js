@@ -888,7 +888,7 @@
       }
       isEmpty = true;
       lines = lines.slice(1, -1).map(function(line) {
-        line = line.replace(new RegExp("/^[ ]{" + count + "}/"), '');
+        line = line.replace(new RegExp("^[ ]{" + count + "}"), '');
         if (isEmpty && !line.match(/^\s*$/)) {
           isEmpty = false;
         }
