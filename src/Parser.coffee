@@ -834,10 +834,16 @@ class Parser
         html = ''
         [space, type] = value
         rows = []
+        suffix = ''
         last = 0
 
-        for line in lines
+        for line, key in lines
             if matches = line.match new RegExp "^(\\s{#{space}})((?:[0-9]+\\.?)|\\-|\\+|\\*)(\\s+)(.*)$"
+                if type is 'ol' and key is 0
+                    start = parseInt matches[2]
+
+                    suffix = ' start="' +  start + '"' if start != 1
+
                 rows.push [matches[4]]
                 last = rows.length - 1
             else
@@ -847,7 +853,7 @@ class Parser
             html += '<li>' + (@parse (row.join "\n"), yes, start) + '</li>'
             start += row.length
 
-        "<#{type}>#{html}</#{type}>"
+        "<#{type}#{suffix}>#{html}</#{type}>"
 
 
     parseTable: (lines, value, start) ->

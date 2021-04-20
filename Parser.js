@@ -955,14 +955,21 @@
     };
 
     Parser.prototype.parseList = function(lines, value, start) {
-      var html, j, l, last, len, len1, line, matches, row, rows, space, type;
+      var html, j, key, l, last, len, len1, line, matches, row, rows, space, suffix, type;
       html = '';
       space = value[0], type = value[1];
       rows = [];
+      suffix = '';
       last = 0;
-      for (j = 0, len = lines.length; j < len; j++) {
-        line = lines[j];
+      for (key = j = 0, len = lines.length; j < len; key = ++j) {
+        line = lines[key];
         if (matches = line.match(new RegExp("^(\\s{" + space + "})((?:[0-9]+\\.?)|\\-|\\+|\\*)(\\s+)(.*)$"))) {
+          if (type === 'ol' && key === 0) {
+            start = parseInt(matches[2]);
+            if (start !== 1) {
+              suffix = ' start="' + start + '"';
+            }
+          }
           rows.push([matches[4]]);
           last = rows.length - 1;
         } else {
@@ -974,7 +981,7 @@
         html += '<li>' + (this.parse(row.join("\n"), true, start)) + '</li>';
         start += row.length;
       }
-      return "<" + type + ">" + html + "</" + type + ">";
+      return "<" + type + suffix + ">" + html + "</" + type + ">";
     };
 
     Parser.prototype.parseTable = function(lines, value, start) {
