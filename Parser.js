@@ -553,6 +553,10 @@
       var isAfterList, matches, space;
       if (!!(matches = line.match(/^(\s*)(~{3,}|`{3,})([^`~]*)$/i))) {
         if (this.isBlock('code')) {
+          if (state.code !== matches[2]) {
+            this.setBlock(key);
+            return false;
+          }
           isAfterList = block[3][2];
           if (isAfterList) {
             this.combineBlock().setBlock(key);
@@ -565,6 +569,7 @@
             space = block[3][0];
             isAfterList = matches[1].length >= space + state.empty;
           }
+          state.code = matches[2];
           this.startBlock('code', key, [matches[1], matches[3], isAfterList]);
         }
         return false;

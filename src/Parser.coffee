@@ -438,6 +438,10 @@ class Parser
     parseBlockCode: (block, key, line, state) ->
         if !!(matches = line.match /^(\s*)(~{3,}|`{3,})([^`~]*)$/i)
             if @isBlock 'code'
+                if state.code != matches[2]
+                    @setBlock key
+                    return no
+
                 isAfterList = block[3][2]
 
                 if isAfterList
@@ -452,6 +456,7 @@ class Parser
 
                     isAfterList = matches[1].length >= space + state.empty
 
+                state.code = matches[2]
                 @startBlock 'code', key, [matches[1], matches[3], isAfterList]
 
             return no
