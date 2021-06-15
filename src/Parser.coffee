@@ -333,9 +333,9 @@ class Parser
 
         # autolink url
         if  enableAutoLink
-            text = text.replace /(^|[^\"])((https?):\S+)($|[^\"])/ig, (matches...) =>
+            text = text.replace /(^|[^\"])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*))($|[^\"])/g, (matches...) =>
                 link = @call 'parseLink', matches[2]
-                "#{matches[1]}<a href=\"#{matches[2]}\">#{link}</a>#{matches[4]}"
+                "#{matches[1]}<a href=\"#{matches[2]}\">#{link}</a>#{matches[5]}"
 
         text = @call 'afterParseInlineBeforeRelease', text
         text = @releaseHolder text, clearHolders
@@ -988,9 +988,9 @@ class Parser
 
 
     cleanUrl: (url) ->
-        if !!(matches = url.match /^\s*((http|https|ftp|mailto):\S+)/i)
+        if !!(matches = url.match /^\s*(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*))/)
             matches[1]
-        else if !!(matches = url.match /^\s*(\S+)/)
+        else if !!(matches = url.match /^\s*([-a-zA-Z0-9()@:%_\+.~#?&\/=]+)/)
             matches[1]
         else
             '#'
