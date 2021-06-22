@@ -270,9 +270,9 @@ class Parser
             @makeHolder prefix + escaped
         
         # link
-        text = text.replace /<(https?:\/\/.+)>/ig, (matches...) =>
+        text = text.replace /<(https?:\/\/.+|(?:mailto:)?[_a-z0-9-\.\+]+@[_\w-]+\.[a-z]{2,})>/ig, (matches...) =>
             url = @cleanUrl matches[1]
-            link = @call 'parseLink', matches[1]
+            link = @call 'parseLink', url
 
             @makeHolder "<a href=\"#{url}\">#{link}</a>"
 
@@ -329,13 +329,13 @@ class Parser
 
         # strong and em and some fuck
         text = @parseInlineCallback text
-        text = text.replace /<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/ig, '<a href="mailto:$1">$1</a>'
 
         # autolink url
         if  enableAutoLink
-            text = text.replace /(^|[^\"])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*))($|[^\"])/g, (matches...) =>
-                link = @call 'parseLink', matches[2]
-                "#{matches[1]}<a href=\"#{matches[2]}\">#{link}</a>#{matches[5]}"
+            text = text.replace /(^|[^\"])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)|(?:mailto:)?[_a-z0-9-\.\+]+@[_\w-]+\.[a-z]{2,})($|[^\"])/g, (matches...) =>
+                url = @cleanUrl matches[2]
+                link = @call 'parseLink', url
+                "#{matches[1]}<a href=\"#{link}\">#{matches[2]}</a>#{matches[5]}"
 
         text = @call 'afterParseInlineBeforeRelease', text
         text = @releaseHolder text, clearHolders
@@ -990,7 +990,10 @@ class Parser
     cleanUrl: (url) ->
         url = url.replace /["'<>\s]/g, ''
 
-        return '#' if (url.match /^\w+:/i) and not (url.match /^https?:/i)
+        if !!(matches = url.match /^(mailto:)?[_a-z0-9-\.\+]+@[_\w-]+\.[a-z]{2,}$/i)
+            url = 'mailto:' + url if not matches[1]?
+
+        return '#' if (url.match /^\w+:/i) and not (url.match /^(https?|mailto):/i)
 
         url
 
