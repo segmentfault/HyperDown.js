@@ -988,12 +988,11 @@ class Parser
 
 
     cleanUrl: (url) ->
-        if !!(matches = url.match /^\s*(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*))/)
-            matches[1]
-        else if !!(matches = url.match /^\s*([-a-zA-Z0-9()@:%_\+.~#?&\/=]+)/)
-            matches[1]
-        else
-            '#'
+        url = url.replace /["'<>\s]/g, ''
+
+        return '#' if (url.match /^\w+:/i) and not (url.match /^https?:/i)
+
+        url
 
 
     escapeBracket: (str) ->
