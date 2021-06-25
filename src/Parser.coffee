@@ -303,8 +303,9 @@ class Parser
         text = text.replace /!\[((?:[^\]]|\\\]|\\\[)*?)\]\(((?:[^\)]|\\\)|\\\()+?)\)/g, (matches...) =>
             escaped = htmlspecialchars @escapeBracket matches[1]
             url = @escapeBracket matches[2]
-            url = @cleanUrl url
-            @makeHolder "<img src=\"#{url}\" alt=\"#{escaped}\" title=\"#{escaped}\">"
+            [url, title] = @cleanUrl url, yes
+            title = if not title? then escaped else " title=\"#{title}\""
+            @makeHolder "<img src=\"#{url}\" alt=\"#{title}\" title=\"#{title}\">"
 
         text = text.replace /!\[((?:[^\]]|\\\]|\\\[)*?)\]\[((?:[^\]]|\\\]|\\\[)+?)\]/g, (matches...) =>
             escaped = htmlspecialchars @escapeBracket matches[1]
@@ -317,8 +318,10 @@ class Parser
         text = text.replace /\[((?:[^\]]|\\\]|\\\[)+?)\]\(((?:[^\)]|\\\)|\\\()+?)\)/g, (matches...) =>
             escaped = @parseInline (@escapeBracket matches[1]), '', no, no
             url = @escapeBracket matches[2]
-            url = @cleanUrl url
-            @makeHolder "<a href=\"#{url}\">#{escaped}</a>"
+            [url, title] = @cleanUrl url, yes
+            title = if not title? then '' else " title=\"#{title}\""
+
+            @makeHolder "<a href=\"#{url}\"#{title}>#{escaped}</a>"
 
         text = text.replace /\[((?:[^\]]|\\\]|\\\[)+?)\]\[((?:[^\]]|\\\]|\\\[)+?)\]/g, (matches...) =>
             escaped = @parseInline (@escapeBracket matches[1]), '', no, no
@@ -987,7 +990,16 @@ class Parser
         (@markLines lines, start).join "\n"
 
 
-    cleanUrl: (url) ->
+    cleanUrl: (url, parseTitle = false) ->
+        title = null
+
+        if parseTitle
+            pos = url.indexOf ' '
+
+            if pos > 0
+                title = htmlspecialchars trim (url.substring pos + 1), ' "\''
+                url = url.substring 0, pos
+
         url = url.replace /["'<>\s]/g, ''
 
         if !!(matches = url.match /^(mailto:)?[_a-z0-9-\.\+]+@[_\w-]+\.[a-z]{2,}$/i)
@@ -995,7 +1007,7 @@ class Parser
 
         return '#' if (url.match /^\w+:/i) and not (url.match /^(https?|mailto):/i)
 
-        url
+        if parseTitle then [url, title] else url
 
 
     escapeBracket: (str) ->
