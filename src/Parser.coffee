@@ -338,7 +338,7 @@ class Parser
             text = text.replace /(^|[^\"])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)|(?:mailto:)?[_a-z0-9-\.\+]+@[_\w-]+\.[a-z]{2,})($|[^\"])/g, (matches...) =>
                 url = @cleanUrl matches[2]
                 link = @call 'parseLink', url
-                "#{matches[1]}<a href=\"#{link}\">#{matches[2]}</a>#{matches[5]}"
+                "#{matches[1]}<a href=\"#{url}\">#{link}</a>#{matches[5]}"
 
         text = @call 'afterParseInlineBeforeRelease', text
         text = @releaseHolder text, clearHolders
