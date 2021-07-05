@@ -992,11 +992,12 @@ class Parser
 
     cleanUrl: (url, parseTitle = false) ->
         title = null
+        url = trim url
 
         if parseTitle
             pos = url.indexOf ' '
 
-            if pos > 0
+            if pos >= 0
                 title = htmlspecialchars trim (url.substring pos + 1), ' "\''
                 url = url.substring 0, pos
 
