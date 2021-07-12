@@ -408,6 +408,7 @@ class Parser
         if (@isBlock 'list') and not line.match /^\s*\[((?:[^\]]|\\\]|\\\[)+?)\]:\s*(.+)$/
             if !!(line.match /^(\s*)(~{3,}|`{3,})([^`~]*)$/i)
                 # ignore code
+                state.empty = 0
                 return yes
             else if (state.empty <= 1) and !!(matches = line.match /^(\s*)\S+/) and matches[1].length >= (block[3][0] + state.empty)
                 state.empty = 0
