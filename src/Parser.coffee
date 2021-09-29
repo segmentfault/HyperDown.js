@@ -850,9 +850,9 @@ class Parser
         for line, key in lines
             if matches = line.match new RegExp "^(\\s{#{space}})((?:[0-9]+\\.?)|\\-|\\+|\\*)(\\s+)(.*)$"
                 if type is 'ol' and key is 0
-                    start = parseInt matches[2]
+                    olStart = parseInt matches[2]
 
-                    suffix = ' start="' +  start + '"' if start != 1
+                    suffix = ' start="' +  olStart + '"' if olStart != 1
 
                 rows.push [matches[4]]
                 last = rows.length - 1
