@@ -613,7 +613,7 @@ class Parser
 
 
     parseBlockTable: (block, key, line, state, lines) ->
-        if !!(matches = line.match /^((?:(?:(?:\||\+)(?:[ :]*\-+[ :]*)(?:\||\+))|(?:(?:[ :]*\-+[ :]*)(?:\||\+)(?:[ :]*\-+[ :]*))|(?:(?:[ :]*\-+[ :]*)(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-+[ :]*)))+)$/)
+        if !!(matches = line.match /^\s*(\|?[ :]*-+[ :]*(?:\|[ :]*-+[ :]*)*\|?)\s*$/)
             if @isBlock 'table'
                 block[3][0].push block[3][2]
                 block[3][2] += 1
