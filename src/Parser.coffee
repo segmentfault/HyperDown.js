@@ -613,45 +613,46 @@ class Parser
 
 
     parseBlockTable: (block, key, line, state, lines) ->
-        if !!(matches = line.match /^\s*(\|?[ :]*-+[ :]*(?:\|[ :]*-+[ :]*)*\|?)\s*$/)
-            if @isBlock 'table'
-                block[3][0].push block[3][2]
-                block[3][2] += 1
-                @setBlock key, block[3]
-            else
-                head = 0
-
-                if not block? or block[0] != 'normal' or lines[block[2]].match /^\s*$/
-                    @startBlock 'table', key
+        if !!(matches = line.match /^\s*(\|?[ :]*-{2,}[ :]*(?:[\|\+][ :]*-{2,}[ :]*)*\|?)\s*$/)
+           if matches[1].indexOf('|') >= 0 or matches[1].indexOf('+') >= 0
+                if @isBlock 'table'
+                    block[3][0].push block[3][2]
+                    block[3][2] += 1
+                    @setBlock key, block[3]
                 else
-                    head = 1
-                    @backBlock 1, 'table'
+                    head = 0
 
-                if matches[1][0] == '|'
-                    matches[1] = matches[1].substring 1
+                    if not block? or block[0] != 'normal' or lines[block[2]].match /^\s*$/
+                        @startBlock 'table', key
+                    else
+                        head = 1
+                        @backBlock 1, 'table'
 
-                    if matches[1][matches[1].length - 1] == '|'
-                        matches[1] = matches[1].substring 0, matches[1].length - 1
+                    if matches[1][0] == '|'
+                        matches[1] = matches[1].substring 1
 
-                rows = matches[1].split /\+|\|/
-                aligns = []
+                        if matches[1][matches[1].length - 1] == '|'
+                            matches[1] = matches[1].substring 0, matches[1].length - 1
 
-                for row in rows
-                    align = 'none'
+                    rows = matches[1].split /\+|\|/
+                    aligns = []
 
-                    if !!(matches = row.match /^\s*(:?)\-+(:?)\s*$/)
-                        if !!matches[1] && !!matches[2]
-                            align = 'center'
-                        else if !!matches[1]
-                            align = 'left'
-                        else if !!matches[2]
-                            align = 'right'
+                    for row in rows
+                        align = 'none'
 
-                    aligns.push align
+                        if !!(matches = row.match /^\s*(:?)\-+(:?)\s*$/)
+                            if !!matches[1] && !!matches[2]
+                                align = 'center'
+                            else if !!matches[1]
+                                align = 'left'
+                            else if !!matches[2]
+                                align = 'right'
 
-                @setBlock key, [[head], aligns, head + 1]
+                        aligns.push align
 
-            return no
+                    @setBlock key, [[head], aligns, head + 1]
+
+                return no
 
         yes
 
@@ -682,7 +683,7 @@ class Parser
 
 
     parseBlockShr: (block, key, line) ->
-        if !!(line.match /^(\* *){3,}\s*$/)
+        if !!(line.match /^\*{3,}\s*$/)
             @startBlock 'hr', key
                 .endBlock()
             
@@ -692,7 +693,7 @@ class Parser
 
 
     parseBlockDhr: (block, key, line) ->
-        if !!(line.match /^(- *){3,}\s*$/)
+        if !!(line.match /^-{3,}\s*$/)
             @startBlock 'hr', key
                 .endBlock()
             
